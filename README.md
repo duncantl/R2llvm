@@ -1,6 +1,6 @@
 # R2llvm
 
-R2llvm is the next generation of RLLVMCompile package to provide
+R2llvm is the next generation of [RLLVMCompile](https://github.com/duncantl/RLLVMCompile) package to provide
 a compiler for R code that generates machine code using [LLVM](http://llvm.org) via the Rllvm package.
 This differs from RLLVMCompile as it uses
 a control flow graph computed via the [rstatic](https://github.com/nick-ulle/rstatic) package
