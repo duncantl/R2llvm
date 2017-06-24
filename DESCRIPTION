@@ -1,13 +1,19 @@
-Package: RLLVMCompile
+Package: R2llvm
 Title: LLVM-based compiler for R code
-Version: 0.2-0
+Version: 0.1-0
 Description: A prototype for a compiler for R code that uses LLVM to generate machine code.
-Author: Vince Buffalo, Duncan Temple Lang
+ This is a fork of the RLLVMCompile package. We are using the type information from the
+ package RTypeInference and also the Control Flow Graph from the rstatic package
+ both primarily by Nick Ulle.
+Author: Duncan Temple Lang
 Maintainer: Duncan Temple Lang <duncan@r-project.org>
 License: BSD_3_clause + file LICENSE
 Comment: Need to depend on Rllvm as variables such as Int32Type are defined at load time, not in the code
          for the package directly.
 Depends: Rllvm
-Imports: methods, CodeAnalysis, codetools
+Imports: methods, typesys, RTypeInference
+         CodeAnalysis, 
+         codetools
 xCollate: createLoop.R expressions.R guessType.R vectorize.R while.R compile.R compiler.R
+Note: This is forked from RLLVMCompile an
 

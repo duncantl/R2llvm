@@ -7,6 +7,8 @@ import(Rllvm)
 import(methods)
 import(CodeAnalysis)
 importFrom(codetools, findGlobals)
+import(typesys)
+import(RTypeInference)
 
 export(compileFunction) #, compile)
 export(getCompilerHandlers)
