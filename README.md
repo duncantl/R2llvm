@@ -46,13 +46,33 @@ GPUs, etc. and emscripten can generate JavaScript from the IR code we generate
 with LLVM.
 
 
+## Getting Started
+To compile an R function into machine code, use 
+```
+compileFunction()
+```
+Ideally you specify the R function and the function takes care of the rest.
+This will attempt to infer the types for this function.
+It will also attempt to determine the signature - parameter and return types -  for other functions
+this function calls.
+This returns a reference to the LLVM Function.
+You can then invoke this using the .llvm() function from the Rllvm package.
+The following shows how to compute 42 slowly!
+```
+library(R2llvm)
+f = function() 42L
+cf = compileFunction(f, optimize = FALSE) #XXX
+.llvm(cf)
+```
+
+<!-- Remove the optimize -->
+
+
 ## History
 
 Vince Buffalo and I started the RLLVMCompile package several years ago (late 2010)
-after the development of the Rllvm package.  Unfortunately, I had
-other committments (the book XML and Web Technologies with R, and
-another "Data Science in R: A Case Studies Approach to Computational
-Reasoning and Problem Solving").  Nick Ulle has been working on
-type inference starting in 2015/2016
+after the development of the Rllvm package.  Unfortunately, I had other committments (2 books,
+directing the Davis Data Science Initiative).  Nick Ulle has been working on type inference starting in 2015/2016.
+
 
 
