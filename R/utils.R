@@ -160,10 +160,10 @@ function(env, ir, toType, fromType, val, ...)
 
    # convert from Double to Float.
   if(sameType(toType, FloatType) && sameType(fromType, DoubleType))
-    return(ir$createFPTrunc(val, toType))
+     return(ir$createFPTrunc(val, toType))
 
   if(isIntegerType(fromType))
-    return(createCastIntType(ir, val, toType, fromType))
+     return(createCastIntType(ir, val, toType, fromType))
   
   toTypes <- c(Int32Type = Int32Type,
                DoubleType = DoubleType,
@@ -180,7 +180,7 @@ function(env, ir, toType, fromType, val, ...)
   i <- which(sapply(fromTypes, function(x) sameType(fromType, x)))
 
   if (!length(i))
-    stop(sprintf("Don't know how to handle this fromType ", as(fromType, "character"), " (reverseLookupType says type '%s')", reverseLookupType(fromType)))
+      stop(sprintf("Don't know how to handle this fromType ", as(fromType, "character"), " (reverseLookupType says type '%s')", reverseLookupType(fromType)))
 
   ## checking needed here
   fun = casters[[i]]
