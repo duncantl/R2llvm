@@ -5,7 +5,7 @@ function(.compilerHandlers = getCompilerHandlers(),
          .builtInRoutines = getBuiltInRoutines(),
          .functionInfo = list(),
          structInfo = list(),
-         .zeroBased = logical(),
+         .zeroBased = TRUE,
          .integerLiterals = TRUE,
          .useFloat = FALSE,
          .debug = TRUE, .assert = TRUE,
@@ -105,4 +105,32 @@ function(fun = NULL, curBlock = NULL, .types = list(), mod = NULL,
            names(opts), opts)
     
     nenv
+}
+
+
+makeCompileEnv =
+function()
+{
+   nenv <- new.env( parent = emptyenv())
+#   nenv$.continueBlock = list()
+#   nenv$.nextBlock = list()
+
+   nenv$declFunction = function(name) 
+        declareFunction(nenv$.builtInRoutines[[name]], name, nenv$.module)
+
+   nenv$.funCalls = list()
+   nenv$.allocVars = list()
+   
+   nenv$addCallInfo = function(name, retType = NULL, types = NULL) {
+        i = length(nenv$.funCalls)
+        nenv$.funCalls[[i + 1L]] <<- list(name, returnType = retType, params = types)
+        names(nenv$.funCalls)[i + 1L] <<- name
+        TRUE
+   }
+
+   nenv$newAlloc = function(var, inst)
+                      nenv$.allocVars[[ var ]] <<- inst
+   nenv$getAlloc = function(var)
+                        nenv$.allocVars[[ var ]]
+   nenv
 }

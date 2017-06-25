@@ -494,7 +494,12 @@ function(module, argTypes)
 
 
 compileFunction <-
-function(fun, returnType, types = list(), module = Module(name), name = NULL,
+function(fun,
+         cfg = to_cfg(fun),
+         types = infer_types(cfg),
+         returnType = return_type(types), 
+         module = Module(name),
+         name = NULL,
          compiler = makeCompileEnv(),
          NAs = FALSE,
          asFunction = FALSE, asList = FALSE,
@@ -502,18 +507,23 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
          .functionInfo = list(...),
          .routineInfo = list(),
          .compilerHandlers = getCompilerHandlers(),
-         .globals = getGlobals(fun, names(.CallableRFunctions), .ignoreDefaultArgs, .assert = .assert, .debug = .debug), #  would like to avoid processing default arguments.
+         .globals = getGlobals(fun, names(.CallableRFunctions),
+                               .ignoreDefaultArgs, .assert = .assert, .debug = .debug), #  would like to avoid processing default arguments.
                                  # findGlobals(fun, merge = FALSE, .ignoreDefaultArgs), 
          .insertReturn = !identical(returnType, VoidType),
          .builtInRoutines = getBuiltInRoutines(),
          .constants = getConstants(),
          .vectorize = character(), .execEngine = NULL,
-         structInfo = list(), .ignoreDefaultArgs = TRUE,
-         .useFloat = FALSE, .zeroBased = logical(),
-         .localVarTypes = list(), .fixIfAssign = TRUE,
+         structInfo = list(),
+         .ignoreDefaultArgs = TRUE,
+         .useFloat = FALSE,
+         .zeroBased = logical(),
+         .localVarTypes = list(),
+         .fixIfAssign = TRUE,
          .CallableRFunctions = list(), 
          .RGlobalVariables = character(),
-         .debug = TRUE, .assert = TRUE, .addSymbolMetaData = TRUE,
+         .debug = TRUE, .assert = TRUE,
+         .addSymbolMetaData = TRUE,
          .readOnly = constInputs(fun),
          .integerLiterals = TRUE,
          .loadExternalRoutines = TRUE
@@ -525,6 +535,7 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
    if(is.logical(.assert))
       .assert = if(.assert) ".assert" else character()
 
+#probably goes   
    if(!missing(types) && !is.list(types))
       types = structure(list(types), names = names(formals(fun))[1])
 
@@ -536,6 +547,10 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
   
   ftype <- typeof(fun)
   if (ftype == "closure") {
+
+     if(.insertReturn)
+       fun = insertReturn(fun) # do we need env??
+                               #  Doing this here because we need to insert the returns before the CFG and types.
 
        #if there is no type information but the author put the type information on the function itself, use that.
      .typeInfo = attr(fun, "llvmTypes")
@@ -555,19 +570,13 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
     }
 
     
-    if(length(args)  > length(types)) {
+    if(length(args)  > length(types)) 
        stop("need to specify the types for all of the arguments for the ", name, " function")
-    } else if(length(types) > length(args))
-       warning("more types specified than parameters for the new routine")
 
-    if(length(names(types)) == 0)
-      names(types) = names(args)
-    
-    # Find the name of the function if not provided
-    if (is.null(name))
-      name <- deparse(substitute(fun))
 
-      # See if we have some SEXP types for which we may need to the length.
+#XX Revisit when the switch to the new types is working      
+if(FALSE) {
+      # See if we have some SEXP types for which we may need to know the length.
       # This might go as we can call Rf_length().  nrow()
     rVecTypes = sapply(types, isRVectorType)
     if(any(rVecTypes)) {
@@ -575,7 +584,7 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
        types[lengthVars] = replicate(length(lengthVars), Int32Type)
     } else
        lengthVars = character()
-
+}
      
     # Grab types, including return. Set up Function, block, and params.
     isDimensionedType = sapply(types, is, "DimensionedType")
@@ -586,11 +595,21 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
        types[isDimensionedType] = replicate(sum(isDimensionedType), SEXPType) #XXXX Not necessarily a SEXPType anymore.
     } else
        dimTypes = list()
-     
-    argTypes <- types
+
+
+
+   types = lapply(types, translate_type)
+   if(is(returnType, "typesys::list|Type"))
+       returnType = translate_type(returnType)
+
+       # Create the LLVM Function.
+
+                # not all the types, just the parameter types and translate them from .
+     #??? Probably best to convert all the types to Rllvm types now and also to change
+     # the names of the parameters to SSA form now. Could change the type and CFG to use the parameter names for
+     # first reference to parameter rather than appending _1
+    argTypes <- getFunParamTypes(types, names(formals(fun)))
     llvm.fun <- Function(name, returnType, argTypes, module)
-
-
 
 
     if(any( i <- sapply(argTypes, is, "SEXPType")))
@@ -625,8 +644,17 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
        .functionInfo[[name]] = list(returnType = returnType, params = types)
 
 
-    block <- Block(llvm.fun, "entry")
+
+
+    cfg.blocks = cfg$blocks[ rev(rstatic::postorder(cfg)) ]
+#    names(cfg.blocks)[1] = "entry"
+    blocks = lapply(names(cfg.blocks), function(i) Block(llvm.fun, i))
+    names(blocks) = names(cfg.blocks)
+
+
     params <- getParameters(llvm.fun)  # TODO need to load these into nenv
+ # probably don't need this later but we do set it in the nenv for now.
+    block = blocks[[1]] 
     ir <- IRBuilder(block)
 
 
@@ -671,16 +699,18 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
     nenv$.localVarTypes = .localVarTypes
     nenv$.Constants = .constants
     nenv$.dimensionedTypes = dimTypes     
-     
 
-    if(.insertReturn)
-       fun = insertReturn(fun, env = nenv)        
-    fbody <- body(fun)
+    nenv$blocks = blocks
+    nenv$cfg.blocks = cfg.blocks
+
+
+
+   fbody <- body(fun)
 
    last = fbody[[length(fbody)]]
    if(sameType(VoidType, returnType) && is.call(last) && as.character(last[[1]]) == "if" && length(last) == 3)
       fbody[[ length(fbody) + 1L ]] = quote(return( ))
-   
+
      
     nenv$.Rfun = fun
 
@@ -698,15 +728,21 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
 
        }
    }
-     
-    compileExpressions(fbody, nenv, ir, llvm.fun, name)
+
+ ### here we are going to work on the blocks in the call graph and use a different approach.
+    lapply(cfg.blocks, compileCFGBlock, types, nenv, ir, llvm.fun, blocks)
+          
+#GONE    compileExpressions(fbody, nenv, ir, llvm.fun, name)
 
        # the second condition occurs when we have an if() with no else as the last expression
        # in the function. We add a return() so the compiler handlers work, and then we don't
        # add the return here.
        # Could also check for a terminator with:  getTerminator(getInsertBlock(ir))
+if(FALSE) {
+# Shouldn't need with CFG    
     if(identical(returnType, VoidType) && !identical(fbody[[length(fbody)]], quote(return())))
        ir$createReturn()
+}
 
 
      if(length(nenv$.SetCallFuns)) {
@@ -735,8 +771,7 @@ function(fun, returnType, types = list(), module = Module(name), name = NULL,
      }
 
     ## This may ungracefully cause R to exit, but it's still
-    ## preferably to the crash Optimize() on an unverified module
-    ## creates.
+    ## preferably to the crash Optimize() creates on an unverified module
     if(optimize && verifyModule(module))
        Optimize(module, execEngine = .execEngine)
 
@@ -784,27 +819,6 @@ function(name)
   w = name %in% Rf_routines
   name[w] = sprintf("Rf_%s", name[w])
   name
-}
-
-makeCompileEnv =
-function()
-{
-   nenv <- new.env( parent = emptyenv())
-   nenv$.continueBlock = list()
-   nenv$.nextBlock = list()
-
-   nenv$declFunction = function(name) 
-        declareFunction(nenv$.builtInRoutines[[name]], name, nenv$.module)
-
-   nenv$.funCalls = list()
-   nenv$addCallInfo = function(name, retType = NULL, types = NULL) {
-        i = length(nenv$.funCalls)
-        nenv$.funCalls[[i + 1L]] <<- list(name, returnType = retType, params = types)
-        names(nenv$.funCalls)[i + 1L] <<- name
-        TRUE
-   }
-
-   nenv
 }
 
 
