@@ -35,6 +35,7 @@ function(expr, nested = FALSE, isVoid = FALSE, ...)
 function(expr, nested = FALSE, isVoid = FALSE, env = NULL, ...)
 {
 #XXXX rework this strategy
+    #??? What are we trying to do?
   if(!is.null(env) && !is.null(getSApplyType(expr, env)))
     return(expr)
   
