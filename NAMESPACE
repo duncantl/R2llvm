@@ -1,14 +1,15 @@
 # For now export everything.
 #exportPattern(".*")
 
-useDynLib(RLLVMCompile)
+useDynLib(R2llvm)
 
 import(Rllvm)
 import(methods)
 import(CodeAnalysis)
 importFrom(codetools, findGlobals)
-import(typesys)
+#import(typesys)
 import(RTypeInference)
+import(rstatic)
 
 export(compileFunction) #, compile)
 export(getCompilerHandlers)
@@ -83,4 +84,14 @@ export(compiler)
 
 export(setVarType)
 
+
+
+export(translate_type)
+S3method(translate_type, "typesys::IntegerType")
+
+export(construct_ir)
+S3method(construct_ir, "Assign")
+S3method(construct_ir, "Integer")
+S3method(construct_ir, "RetTerminator")
+S3method(construct_ir, "BrTerminator")
 
