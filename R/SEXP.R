@@ -115,7 +115,7 @@ function(call, env, ir, ..., asSEXT = TRUE)
 
 
 getSEXPTypeElementAccessor =
-function(type, env, addProxy = TRUE)
+function(type, env, addProxy = FALSE)
 {
   x =
    if(is(type, "INTSXPType") || is(type, "LGLSXP") || sameType(type, Int32Type) )
@@ -165,7 +165,7 @@ function(fun)
          integer = INTSXP,
          logical = LGLSXP,
          character = STRSXP,
-#         list = VECSXP,
+         list = VECSXP,
          stop("unrecognized function to create an R vector"))
 }
 
