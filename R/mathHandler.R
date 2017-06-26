@@ -29,11 +29,12 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
 # }
 
 
-  if(length(call) == 2) {  # So a unary operation
+   
+  if(length(call$args) == 1) {  # So a unary operation
        #XXX temporary exploration
         # if this is +, e.g. +n, we should just compile call[[2]]
-     if(as.character(call[[1]]) == "+")
-        return(compile(call[[2]], env, ir, ..., isSubsetIndex = isSubsetIndex))
+     if(call$fn$name == "+")
+        return(construct_ir(call$args[[1]], env, ir, env$.types)) # ..., isSubsetIndex = isSubsetIndex))
 
       # XXX what about !
      k = quote(0 - 0)
@@ -42,16 +43,16 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
      call = k
  }  # Finished with unary operation
  
-  call[2:length(call)] = lapply(call[-1], rewriteExpressions, env, isSubsetIndex = isSubsetIndex)
+  args = lapply(call$args, rewriteExpressions, env, isSubsetIndex = isSubsetIndex)
 
   origCall = call
 
-  lit <- sapply(call[-1], is.numeric) # literals
+  lit <- sapply(args, function(x) is.numeric(x) || is(x, "Integer") || is(x, "Numeric")) # literals
 
   if(all(lit)) {
           # The two operands are literal values so no need to compile run-time code.
           # So compute the result here and return.
-    value = eval(call)
+    value = do.call(get(call$fn$name), lapply(call$args, function(x) x$value))
     if(is.numeric(value) && env$.useFloat)
        return(createFloatingPointConstant(value, getContext(env$.module), FloatType))
     else
@@ -63,8 +64,9 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
    # target type.
   toCast = NULL
 
+
      # we are getting the types here w/o compiling the expressions (?). So they may not be what we end up with.
-  types = lapply(call[-1], getTypes, env)
+  types = lapply(args, getTypes, env)
   if(any(nulls <- sapply(types, is.null))) {
      i = which(nulls) + 1L
      call[i] = lapply(call[i], compile, env, ir, ...)
@@ -73,51 +75,29 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
   }
 
 
-  if(any(lit)) {
+  targetType = getMathOpType(types)
+
+  if(any(lit) && length(unique(types)) == 2) {
     # This has the problem that the literal will be coerced to the
     # other type, a non-R behavior. TODO remove entirely?
     ## targetType = getTypes(as.list(call[-1])[!lit][[1]], env)
     
-    targetType = getMathOpType(types[!lit])
+  #  targetType = getMathOpType(types[!lit])
     toCast = lit
   } else  {
 
            # Collapse these two types to the "common" type
-    targetType = getMathOpType(types)
+   # targetType = getMathOpType(types)
 
           # If any of the types are different from the targetType, we need
           # to cast.
     typeMatches = sapply(types, sameType, targetType)
     if(any(!typeMatches))
-       toCast = as.list(call[-1])[[which(!typeMatches)]]
+       toCast = as.list(call$args)[[which(!typeMatches)]]
   }
 
   isIntType = sameType(targetType, Int32Type) || sameType(targetType, Int64Type)
-  e = lapply(call[-1], function(x) {
-
-                       if(is(x, "Value")) {
-                           if(is.null(toCast))
-                              x
-                           else
-                             createCast(env, ir, targetType, Rllvm::getType(x), x)
-                       } else if(is(x, "numeric")) {
-
-                          if(isIntType)
-                            createIntegerConstant(as.integer(x))
-                          else if(sameType(targetType, DoubleType))
-                            createDoubleConstant(as.numeric(x))
-                          else
-                            createFloatingPointConstant(as.numeric(x), type = FloatType)
-                       } else if(is.name(x)) {
-                          if (!is.null(toCast) && identical(x, toCast)) {
-                                # Casting to double needed
-                            var = getVariable(x, env, ir)
-                            return(createCast(env, ir, targetType, Rllvm::getType(var), var))
-                         } else 
-                           getVariable(x, env, ir)
-                       } else
-                         compile(x, env, ir, ...)
-                     })
+  e = lapply(call$args, prepareValue, targetType, isIntType, toCast, env, ir, ...)
 
     # XXX Have to deal with different types.
   if(isIntType)
@@ -126,7 +106,7 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
      codes = c("+" = "FAdd", "-" = "FSub", "*" = "FMul", "/" = "FDiv", "%/%" = "FRem")
 
 
-  opName = as.character(call[[1]])
+  opName = as.character(call$fn$name)
   if(opName %in% names(codes))
     op = structure(BinaryOps[[ codes[ opName ] ]], names = opName)
   else
@@ -148,8 +128,9 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
     }
   }
 
+
   if(!is.na(op)) {
-      ins = ir$binOp(op, e[[1]], e[[2]], id = deparse(origCall))
+      ins = ir$binOp(op, e[[1]], e[[2]], id = deparseCall(origCall))
   } else {
     
      if(opName == "^") {
@@ -162,4 +143,51 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
   }
 
   ins
+}
+
+
+deparseCall =
+function(call)
+{
+   strsplit(format(call), "\\\n")[[1]][-1]
+}    
+        
+
+prepareValue =
+    #
+    # The converts the argument in a binary operation call into the appropriate form for that operation.
+    # The argument can be a literal, a Symbol identifying a variable/parameter, a previously compiled
+    # expression
+    #
+function(x, targetType, isIntType, toCast, env, ir, ...)
+{
+     if(is(x, "Symbol"))
+        x = as.name(x$name)
+     else if(is(x, "Literal"))
+        x = x$value
+     else if(is(x, "ASTNode"))
+         stop("need to deal with this type of ASTNode")
+
+     if(is(x, "Value")) {
+        if (!sameType(targetType, Rllvm::getType(x)))   # !is.null(toCast) && identical(x, toCast)
+           createCast(env, ir, targetType, Rllvm::getType(x), x)
+         else
+           x
+     } else if(is(x, "numeric")) {
+
+        if(isIntType)
+          createIntegerConstant(as.integer(x))
+        else if(sameType(targetType, DoubleType))
+          createDoubleConstant(as.numeric(x))
+        else
+          createFloatingPointConstant(as.numeric(x), type = FloatType)
+     } else if(is.name(x)) {
+        var = getVariable(x, env, ir)         
+        if (!sameType(targetType, Rllvm::getType(var)))   # !is.null(toCast) && identical(x, toCast)
+              # Casting to double needed
+          return(createCast(env, ir, targetType, Rllvm::getType(var), var))
+        else 
+          return(var)
+     } else
+       compile(x, env, ir, ...)
 }

@@ -10,9 +10,10 @@ logicOpHandler =
     #
 function(call, env, ir, ...)
 {
-    
-   if(length(call) == 2) {
-     val = compile(call[[2]], env, ir, ...)
+browser()
+   if(length(call$args) == 1) {
+        # Unary operation
+     val = compile(call$args[[1]], env, ir, ...)
      ty.val = getType(val)
      if(sameType(ty.val, Int1Type))
        not = ir$createNot(val)
@@ -29,41 +30,42 @@ function(call, env, ir, ...)
     # need to handle the different ops
     # and the different types, casting
     # if necessary.
-  op = as.character(call[[1]])
+  op = as.character(call$fn$name)
 
-  if(is.null(call[[3]])) { #XXX note NULL has to be on RHS for now.
+  if(is.null(call$args[[2]])) { #XXX note NULL has to be on RHS for now.
        # e.g.   ptr == NULL or ptr != NULL
-     ty = getTypes(call[[2]], env)
+     ty = getTypes(call$args[[1]], env)
           # so comparing a pointer to NULL     
      if(isPointerType(ty)) {
-         a = compile(call[[2]], env, ir)
+         a = compile(call$args[[1]], env, ir)
          b = getNULLPointer(ty) # was SEXPType, but this should be ty.
          op = if(op  == "!=") ICMP_NE else ICMP_EQ
          return( ir$createICmp(op, a, b) )
      }
   }
    
-  types = lapply(call[-1], getTypes, env)
-  targetType = getMathOpType(types, call[-1])
+  types = lapply(call$args, getTypes, env)
+  targetType = getMathOpType(types, call$args)
 
 
     # Need to change order of call[2:3] if one is a literal and the other is a character a and b, 
     # could be call[[2]] e.g.  "z" == x
-  if(sameType(targetType, Int8Type) && is.character(call[[3]]) && nchar(call[[3]]) == 1) { 
-      tmp = Rllvm:::asciiCode(call[[3]])
+  if(sameType(targetType, Int8Type) && is.character(call$args[[2]]) && nchar(call$args[[2]]) == 1) { 
+      tmp = Rllvm:::asciiCode(call$args[[2]])
       b = createIntegerConstant(tmp, type = targetType, bitwidth = 8L) # type is ignored
       # b = compile(tmp, env, ir)
   } else
-      b = compile(call[[3]], env, ir)
+      b = compile(call$args[[2]], env, ir)
    
-  a = compile(call[[2]], env, ir) 
+  a = compile(call$args[[1]], env, ir)
+
 
   if(all(sapply(types, sameType, StringType))) {
       e = substitute(strcmp(a, b) == 0L, list(a = a, b = b))
       return(compile(e, env, ir, ...))
   }
 
-   
+
   isIntType = sameType(targetType, Int32Type)   || sameType(targetType, Int8Type)  
    
 
@@ -79,8 +81,9 @@ function(call, env, ir, ...)
        vars[[convert.i]] = createCast(env, ir, targetType, types[[convert.i]], vars[[convert.i]])
     a = vars[[1]]
     b = vars[[2]]
-  }
-  op = codes[ as.character(call[[1]]) ]
+ }
+
+  op = codes[ op ]
   if(is.na(op))
      stop("Unhandled logical operator")
 
@@ -88,4 +91,5 @@ function(call, env, ir, ...)
     ir$createICmp(op, a, b)    
   else
     ir$createFCmp(op, a, b)
+
 }
