@@ -26,7 +26,7 @@ SameModeAsInput =
 getTypeOf =
 function(call, types)
 {
-  fun = as.character(call[[1]])
+  fun = as.character(if(is(call, "Call")) call$fn$name else call[[1]])
 
   a = sapply(ReturnTypeTable, function(x) fun %in% x)
   if(any(a))
