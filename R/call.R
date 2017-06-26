@@ -4,8 +4,18 @@ compile.call =
   #
 function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
 {
-   funName = as.character(call$fn$name)
-browser()
+   if(is(call, "Call")) {
+       funName =  as.character(call$fn$name)
+       args = call$args
+       astCall = TRUE
+   } else {
+       funName = as.character(call[[1]])
+       args = as.list(call[-1])
+       astCall = FALSE
+   }
+       
+
+
    if(.useHandlers && funName %in% names(env$.compilerHandlers))
        return(dispatchCompilerHandlers(call, env$.compilerHandlers, env, ir, ...))
 
@@ -15,8 +25,8 @@ browser()
    if(funName == "<-" || funName == "=" || funName == "<<-")
       return(env$.compilerHandlers[["<-"]](call, env, ir, ...))  #XXX should lookup the  or "=" - was `compile.<-`
    else if(funName %in% c("numeric", "integer", "character", "logical")) {
-     if(length(call$args) == 0)
-       call[[2]] = 1L #XXX or 0 for an empty vector?
+     if(length(args) == 0)
+       args = list(1L) #XXX or 0 for an empty vector?
 
 
      rtype = switch(funName,
@@ -24,12 +34,13 @@ browser()
                      integer = "INTSXPType",
                      character = "STRSXPType",
                      logical = "LGLSXPType")
-     
-     call[[3]] = call[[2]]
-     call[[2]] = getSEXPTypeNumByConstructorName(funName)
-     call[[1]] = as.name(funName <- "Rf_allocVector")
 
-
+     funName <- "R_allocVector"
+     call = substitute(R_allocVector(type, len), list(type = getSEXPTypeNumByConstructorName(funName), len = args[[1]]))
+#     call$args[[2]] = Integer$new(call$args[[1]]$value)
+#     call$args[[1]] = Integer$new(getSEXPTypeNumByConstructorName(funName))
+#     call$fn = Symbol$new( funName <- "R_allocVector")
+#XXX Register this with LLVM, i.e. llvmAddSymbol()
      
    } else if(funName == "$") {
       return(env$.compilerHandlers[["$"]](call, env, ir, ...))
@@ -86,7 +97,7 @@ browser()
        #XXX may not want this generally, but via an option in env or just have caller invoke compileSApply() directly.
        #  See fgets.Rdb in Rllvm/
    if(!is.null(type <- getSApplyType(call, env, funName))) {
-      fun = env$.module[[ as.character(call[[3]]) ]]
+      fun = env$.module[[ as.character(call$args[[2]]) ]]
       rt = getFunctionReturnType(fun)
       e = rewriteSApply(call, type, rt, env = env, ir = ir) # return type of routine being called.
       ans = lapply(e, compile, env, ir, ...)
@@ -128,27 +139,27 @@ browser()
     #??? Need to get the types of parameters and coerce them to these types.
     # Can we pass this to compile and have that do the coercion as necessary
 
-      targetTypes = getParamTypes(call[[1]], env, TRUE)
+      targetTypes = getParamTypes(funName, env, TRUE)
   }
 
 
      # if we have a mismatch between the length of targetTypes and call (w/o the function name)
      # we either have ... or an error.
-   if(length(targetTypes) < (length(call) - 1L)) {
+   if(length(targetTypes) < length(call$args)) {
 
        if(isVarArg(ofun)) {
              # targetTyps has a TRUE in it
-          d = (length(call) -1L) -  length(targetTypes)
+          d = (length(args) -  length(targetTypes))
           targetTypes[ seq(1, d) + length(targetTypes) ] = replicate(d, NULL, simplify = FALSE)
        } else {
-          msg = paste("incorrect number of parameter types for call to ", as.character(call[[1]]), ". Expected ", length(targetTypes), " had ", length(call)-1L, sep = "")
+          msg = paste("incorrect number of parameter types for call to ", funName, ". Expected ", length(targetTypes), " had ", length(call$args), sep = "")
           err = structure(c(simpleCondition(msg), compileCall = call, paramTypes = targetTypes, func = funName), class = c("WrongNumArgs", "UserError", "CompilerError", "error", "condition"))
           stop(err)
        }
    }
    args = mapply(function(e, ty)
                    compile(e, env, ir, ..., .targetType = ty),  # ... and fun, name,
-                 as.list(call[-1]), targetTypes)
+                 args, targetTypes)
    
    env$addCallInfo(funName)
   
@@ -159,8 +170,7 @@ browser()
    if(!is.null(rtype)) 
        attr(call, "RType") = rtype
 
-       
-
+   
    # If pass an aggregate by value
    #     setArgByVal(call, 1L)
    
