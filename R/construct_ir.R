@@ -99,3 +99,15 @@ construct_ir.Numeric =
 function(node, cmp, helper, types)
    createConstant(helper, node$value)
 
+
+construct_ir.Replacement =
+function(node, cmp, helper, types)
+{
+ return(`compile.=`(node, cmp, helper))
+ 
+  idx = match(node$fn$name, names(cmp$.compilerHandlers))
+  if (is.na(idx)) 
+     compile(node, cmp, helper)
+  else 
+    cmp$.compilerHandlers[[idx]](node, cmp, helper)    
+}
