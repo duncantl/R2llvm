@@ -1,0 +1,14 @@
+library(R2llvm)
+f = function(x)
+       x[1L]
+
+library(RTypeInference)
+cfg = rstatic::to_cfg(f, ssa = FALSE)
+#debug(RTypeInference:::solve.ConstraintSet)
+types = RTypeInference::infer_types(cfg, init = list(x = ArrayType(RealType()))) # REALSXPType))
+fc = compileFunction(f, cfg = cfg, types = types, .readOnly = "x")
+# Need proxy routine for REAL() and to llvmAddSymbol() it.
+llvmAddSymbol("R_REAL")
+
+stopifnot(identical(.llvm(fc, c(101, 20)), 101))
+
