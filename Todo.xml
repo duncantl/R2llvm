@@ -8,6 +8,23 @@
 <title>R2llvm</title>
 <items>
 <item>
+Fix the constInputs() function
+</item>
+<item>
+Fix subsetHandler for the loop case to put the access of the SEXP type not in the entry block, but
+in the initialization block for the loop.
+</item>
+<item>
+In subsetHandler() for the .loopStack case for a SEXP, insert the accessor before
+the terminator, and don't erase and reinsert the terminator.
+</item>
+
+<item>
+getNativeSymbolInfo() is not finding routines in the executable, e.g. Rf_allocVector.
+We need these.
+</item>
+
+<item>
 Get the SSA names for parameters to be the original parameter names.
 </item>
 
