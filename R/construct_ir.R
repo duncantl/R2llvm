@@ -18,34 +18,41 @@ function(node, cmp, helper, types) {
 }
 
 construct_ir.Assign =
-function(node, cmp, helper, types) {
+function(node, cmp, helper, types)
+{
   # Allocate memory for RHS.
   type = types[[node$write$name]]
 
   lhs = helper$createAlloc(type, id = node$write$name)
-
-  # Store LHS into RHS.
-  rhs = construct_ir(node$read, helper, types)
-  
-  helper$createStore(rhs, lhs)
   cmp$newAlloc(node$write$name, lhs)
 
-  return (lhs)
+  # Store LHS into RHS.
+  rhs = construct_ir(node$read, cmp, helper, types)
+
+  # Check the types match
+  rtype = Rllvm::getType(rhs)
+  if(!sameType(rtype, type)) 
+    rhs = createCast(cmp, helper, type, rtype, rhs)
+
+  helper$createStore(rhs, lhs)
+
+  lhs
 }
 
 construct_ir.Call =
-function(node, cmp, helper, types) {
+function(node, cmp, helper, types)
+{
   # FIXME: What if $fn is not a symbol?
-  idx = match(node$fn$name, names(CALL_HANDLERS))
-  if (is.na(idx)) {
-    browser()
-  } else {
-    CALL_HANDLERS[[idx]](node, cmp, helper, types)
-  }
+  idx = match(node$fn$name, names(cmp$.compilerHandlers))
+  if (is.na(idx)) 
+     compile.call(node, cmp, ir)
+  else 
+    cmp$.compilerHandlers[[idx]](node, cmp, helper)
 }
 
 construct_ir.Phi =
 function(node, cmp, helper, types) {
+browser()    
   # Don't insert phis for shadowed globals.
   if ( any(is_global(node$read)) )
     return (NULL)
@@ -61,14 +68,18 @@ function(node, cmp, helper, types) {
 }
 
 construct_ir.Symbol =
-function(node, cmp, helper, types) {
-  return (helper$get_alloc(node$name))
+function(node, cmp, helper, types)
+{
+  v = cmp$getAlloc(node$name)
+  if(is.null(v))
+     v = cmp$.params[[ node$name ]]
+  v  
+#  helper$createLoad(  )
 }
 
 construct_ir.Integer =
-function(node, cmp, helper, types) {
+function(node, cmp, helper, types)
   createIntegerConstant(node$value)
-}
 
 construct_ir.BrTerminator =
 function(node, cmp, helper, types) 
@@ -86,5 +97,5 @@ function(node, cmp, helper, types)
 
 construct_ir.Numeric =
 function(node, cmp, helper, types)
-   createConstant(node$value)
+   createConstant(helper, node$value)
 
