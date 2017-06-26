@@ -115,8 +115,9 @@ function(call, env, ir, ..., asSEXT = TRUE)
 
 
 getSEXPTypeElementAccessor =
-function(type, env)
+function(type, env, addProxy = TRUE)
 {
+  x =
    if(is(type, "INTSXPType") || is(type, "LGLSXP") || sameType(type, Int32Type) )
       "INTEGER"
    else if(is(type, "REALSXPType") || sameType(type, DoubleType) ) # This DoubleType is for when we are dealing with a matrix and have the element type.
@@ -126,6 +127,11 @@ browser()
 'SET_STRING_ELT(%s, %s)'
    } else 
       stop("not done yet")
+
+  if(addProxy)
+      paste0("R_", x)
+  else
+      x
 }
 
 
