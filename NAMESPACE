@@ -88,6 +88,9 @@ export(setVarType)
 
 export(translate_type)
 S3method(translate_type, "typesys::IntegerType")
+S3method(translate_type, "typesys::RealType")
+S3method(translate_type, "typesys::ListType")
+S3method(translate_type, "typesys::BooleanType")
 
 export(construct_ir)
 S3method(construct_ir, "Assign")
