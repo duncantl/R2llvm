@@ -1,6 +1,17 @@
 getTypes =
 function(obj, env, elementType = FALSE, .useFloat = env$.useFloat)
 {
+   if(is(obj, "ASTNode")) {
+     if(is(obj, "Integer"))
+         return(Rllvm::Int32Type)
+     else if(is(obj, "Numeric"))
+         return(Rllvm::DoubleType)
+     else if(is(obj, "Symbol")) {
+         return(env$.types[[obj$name]])
+     } else
+         stop("don't yet know how to getTypes() for ASTNode")
+   }
+       
    if(is(obj, "integer"))
       Int32Type
    else if(is(obj, "numeric")) {
