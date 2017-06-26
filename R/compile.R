@@ -57,13 +57,28 @@ function(call)
     FALSE
 }
 
-isSubsettingAssignment =
-function(call)
-{  
+setGeneric("isSubsettingAssignment", function(call) standardGeneric("isSubsettingAssignment"))
+
+setMethod("isSubsettingAssignment", "call",
+function(call) {  
   length(call) > 1 &&
    is.call(tmp <- call[[2]]) &&
     as.character(tmp[[1]]) %in% c("[", "[[")
+})
+
+tmp =
+function(call)          
+{  
+  length(call$args) > 0 &&
+   is(tmp <- call$args[[1]], "Call") &&
+    as.character(tmp$fn$name) %in% c("[", "[[")
 }
+setOldClass("Call")
+setOldClass("Replacement")
+setMethod("isSubsettingAssignment", "Call", tmp)
+setMethod("isSubsettingAssignment", "Replacement", function(call) TRUE)
+
+
 
 assignHandler = `compile.=` =   # `compile.<-` 
   # Second version here so I don't mess the other one up.
@@ -75,21 +90,24 @@ function(call, env, ir, ..., .useHandler = TRUE)
 
 #   if(.useHandler && !is.na(i <- match(as.character(call[[1]]), names(env$.compilerHandlers)))) 
 #       return(env$.compilerHandlers[[i]](call, env, ir, ...))
+   if(is(call, "Call"))
+      args = call$args
+   else
+      args = call[-1]  # drop the = or <-
    
-   args = call[-1]  # drop the = or <-
    stringLiteral = FALSE
    type = NULL
 
-
-#XXX may not need to do this but maybe can compile the RHS as usual.
-   if(isSubsettingAssignment(call) && is(ty <- getElementAssignmentContainerType(call[[2]], env), "STRSXPType")) {
-     return(assignToSEXPElement(call[[2]], call[[3]], env, ir, type = ty))
-   }
    
+#XXX may not need to do this but maybe can compile the RHS as usual.
+   if(isSubsettingAssignment(call) && is(ty <- getElementAssignmentContainerType(args[[1]], env), "STRSXPType")) {
+     return(assignToSEXPElement(args[[1]], args[[2]], env, ir, type = ty))
+   }
+browser()   
        # look at the RHS
    if(isLiteral(args[[2]])) {  #!! these are the args, not the call - so first element is not = or <-, but the LHS.
          # Do we need to eval() this. If it is really literal, no.
-      tmp = val = eval(args[[2]])
+      tmp = val = if(is(args[[2]], "Literal")) args[[2]]$value else eval(args[[2]])
       ctx = getContext(env$.module)
 
       lhs.type = getDataType(args[[1]], env)
@@ -141,7 +159,7 @@ function(call, env, ir, ..., .useHandler = TRUE)
 
                  # didn't get a type from the variable, so look at the RHS.
           if(is.null(type)) 
-             type = getDataType(val, env, call[[3]])
+             type = getDataType(val, env, args[[2]])
 
         
         if (is.null(type)) {
@@ -195,7 +213,7 @@ function(call, env, ir, ..., .useHandler = TRUE)
       if(!is.null(tmp <- attr(val, "zeroBasedCounting"))) {
          attr(ref, "zeroBasedCounting") = tmp
          if(is.name(call[[2]]))
-           env$.zeroBased[as.character(call[[2]])] = TRUE
+           env$.zeroBased[as.character(args[[1]])] = TRUE
       }
    }
 
@@ -950,13 +968,17 @@ function(..., env = NULL, useFloat = FALSE)
        length = list(Int32Type, getSEXPType("REAL")),
        Rf_length = list(Int32Type, getSEXPType("REAL")),        # same as length. Should rewrite name length to Rf_length.
        INTEGER = list(Int32PtrType, getSEXPType("INT")),
+#    R_INTEGER = list(Int32PtrType, getSEXPType("INT")),     # !! proxy
        REAL = list(DoublePtrType, getSEXPType("REAL")),
-    R_REAL = list(DoublePtrType, getSEXPType("REAL")),      # !! proxy
+#    R_REAL = list(DoublePtrType, getSEXPType("REAL")),      # !! proxy
        Rf_allocVector = list(SEXPType, Int32Type, Int32Type),
-    R_allocVector = list(SEXPType, Int32Type, Int32Type),   # !! proxy
+#    R_allocVector = list(SEXPType, Int32Type, Int32Type),   # !! proxy
        Rf_protect = list(VoidType, SEXPType),
+#    R_protect = list(VoidType, SEXPType),     
        Rf_unprotect = list(VoidType, Int32Type),
-       Rf_unprotect_ptr = list(VoidType, SEXPType),     
+#    R_unprotect = list(VoidType, Int32Type),     
+       Rf_unprotect_ptr = list(VoidType, SEXPType),
+#    R_unprotect_ptr = list(VoidType, SEXPType),          
        R_PreserveObject = list(VoidType, SEXPType),
        R_ReleaseObject = list(VoidType, SEXPType),     
        Rf_mkChar = list(getSEXPType("CHAR"), StringType),
@@ -964,7 +986,9 @@ function(..., env = NULL, useFloat = FALSE)
        STRING_ELT = list(getSEXPType("CHAR"), getSEXPType("STR"), Int32Type), # long vectors?
        SET_STRING_ELT = list(SEXPType, getSEXPType("STR"), Int32Type, getSEXPType("CHAR")), # XXX may need different type for the index for long vector support.       
        SET_VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type, SEXPType), # XXX may need different type for the index for long vector support.
+     R_SET_VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type, SEXPType), # XXX may need different type for the index for long vector support.     
        VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type),
+     R_VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type),
        SETCAR = list(SEXPType, SEXPType, SEXPType),
        SETCDR = list(SEXPType, SEXPType, SEXPType),
        SET_TAG = list(VoidType, SEXPType, SEXPType),
@@ -1158,3 +1182,22 @@ function(..., .types = list(...))
   .types
 }
 
+
+
+compile.Integer =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
+{
+  construct_ir(call, env, ir, env$.types)
+}
+
+compile.Numeric =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
+{
+  construct_ir(call, env, ir, env$.types)
+}
+
+compile.Call =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
+{
+  construct_ir(call, env, ir, env$.types)
+}
