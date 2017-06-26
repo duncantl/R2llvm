@@ -15,6 +15,10 @@ translate_type = function(type) {
   return (Rllvm::DoubleType)
 }
 
+`translate_type.typesys::BooleanType` = function(type) {
+  return (Rllvm::Int8Type) 
+}
+
 #' @export
 `translate_type.typesys::IntegerType` = function(type) {
   return (Rllvm::Int32Type)
@@ -24,6 +28,22 @@ translate_type = function(type) {
 `translate_type.typesys::ListType` = function(type) {
   return (Rllvm::VECSXPType)
 }
+
+`translate_type.typesys::ArrayType` = function(type)
+{
+  elt = type@types
+  if(length(elt) == 1) {
+    if(is(elt[[1]], "typesys::RealType") )
+        return(Rllvm::REALSXPType)
+    else if(is(elt[[1]], "typesys::IntegerType") )
+        return(Rllvm::INTSXPType)
+    else if(is(elt[[1]], "typesys::BooleanType") )
+        return(Rllvm::LGLSXPType)
+  }
+      
+  Rllvm::VECSXPType
+}
+
 
 
 #' @export
