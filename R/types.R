@@ -185,6 +185,12 @@ getDataType =
 function(val, env, call = NULL)
   UseMethod("getDataType")
 
+getDataType.Symbol =
+function(val, env, call = NULL)
+{
+   getDataType( val$name, env, call )
+}
+
 getDataType.AsIs =
 function(val, env, call = NULL)
 {
