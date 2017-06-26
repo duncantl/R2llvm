@@ -5,6 +5,44 @@
 
 
 <topic>
+<title>R2llvm</title>
+<items>
+<item>
+Get the SSA names for parameters to be the original parameter names.
+</item>
+
+<item>
+When we know the types of variables before we compile the RHS, we can specify this type 
+as a target type and that could make the code more efficient as we know what we are working towards. Example?
+
+</item>
+
+<item>
+Switch over to AST classes for Calls, Symbols, Integer, Real, ...
+</item>
+
+<item>
+Get xplus.R working with a RealType as the parameter so we have to cast the 1L
+</item>
+
+
+<item status="done">Get Optimize() working again. Segfaulting as some pointer in Rllvm is NULL.  PassManager?
+<br/>
+Compile Rllvm with LLVM 3.8.
+</item>
+
+
+
+<item status="done">
+The name "%<environment>" coming into the module for xplus.R.
+This is the deparse(origCall)
+</item>
+
+</items>
+</topic>
+
+
+<topic>
 <title>Tools</title>
 <items>
 
