@@ -84,9 +84,9 @@ function(call, env, ir, ..., .targetType = NULL)
 getCompilerHandlers <-
 function(...)
 {  
-   CompilerHandlers =   list(
+   CompilerHandlers = list(
             '!' = notHandler,  # Do we add this to LogicOps, or keep
-                               # separate because it's unitary?
+                               # separate because it's unary?
             'return'= returnHandler,
             '[' = subsetHandler,
             '[[' = subsetDoubleHandler,       
