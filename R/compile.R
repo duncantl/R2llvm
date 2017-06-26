@@ -236,7 +236,7 @@ function(call, env)
    if(is.name(call))
       var = call
    else
-      var = call[[2]]
+      var = call$args[[1]] # [[2]]
 
    getDataType(var, env)
 }
@@ -715,10 +715,12 @@ if(FALSE) {
 
 
    fbody <- body(fun)
-
+if(FALSE) {
+    # Will insertReturn fix this?
    last = fbody[[length(fbody)]]
    if(sameType(VoidType, returnType) && is.call(last) && as.character(last[[1]]) == "if" && length(last) == 3)
       fbody[[ length(fbody) + 1L ]] = quote(return( ))
+}
 
      
     nenv$.Rfun = fun
@@ -949,7 +951,9 @@ function(..., env = NULL, useFloat = FALSE)
        Rf_length = list(Int32Type, getSEXPType("REAL")),        # same as length. Should rewrite name length to Rf_length.
        INTEGER = list(Int32PtrType, getSEXPType("INT")),
        REAL = list(DoublePtrType, getSEXPType("REAL")),
+    R_REAL = list(DoublePtrType, getSEXPType("REAL")),      # !! proxy
        Rf_allocVector = list(SEXPType, Int32Type, Int32Type),
+    R_allocVector = list(SEXPType, Int32Type, Int32Type),   # !! proxy
        Rf_protect = list(VoidType, SEXPType),
        Rf_unprotect = list(VoidType, Int32Type),
        Rf_unprotect_ptr = list(VoidType, SEXPType),     
