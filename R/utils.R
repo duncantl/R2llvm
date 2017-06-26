@@ -147,7 +147,7 @@ function(env, ir, toType, fromType, val, ...)
   # both the from and to types rather than
   # matching on the from type and then picking a function.
 
-  if (sameType(toType, fromType))
+  if(sameType(toType, fromType))
     stop("No need to cast: toType and fromType are same.")
 
 
@@ -191,6 +191,7 @@ function(env, ir, toType, fromType, val, ...)
 createCastIntType =
 function(ir, val, toType, fromType, ...)
 {
+
   if(sameType(toType, DoubleType) || sameType(toType, FloatType))
       return(createSIToFP(ir, val, toType))
 
