@@ -410,6 +410,12 @@ compile.Value <-
 function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL)  
   e
 
+compile.ASTNode =
+function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL)
+{
+    construct_ir(e, env, ir, env$.types)
+}
+
 compile.default <-
 function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL)
 {
@@ -517,7 +523,7 @@ function(fun,
          structInfo = list(),
          .ignoreDefaultArgs = TRUE,
          .useFloat = FALSE,
-         .zeroBased = logical(),
+         .zeroBased = TRUE,
          .localVarTypes = list(),
          .fixIfAssign = TRUE,
          .CallableRFunctions = list(), 
@@ -548,7 +554,7 @@ function(fun,
   ftype <- typeof(fun)
   if (ftype == "closure") {
 
-     if(.insertReturn)
+     if(missing(cfg) && .insertReturn)
        fun = insertReturn(fun) # do we need env??
                                #  Doing this here because we need to insert the returns before the CFG and types.
 
@@ -562,6 +568,9 @@ function(fun,
      }
      
     args <- formals(fun) # for checking against types; TODO
+    if(length(args)) {
+      names(formals(fun)) = names(args) = paste0(names(args), "")#"_1"
+    }
 
     if(length(types) == 0 && length(args) > 0) {
         types = getTypeInfo(fun)
@@ -1020,8 +1029,8 @@ ExcludeCompileFuncs = c("{", "sqrt", "return", MathOps,
                         "break", "next",
                         ".R", ".typeInfo", ".signature", ".varDecl", ".pragma",
                         ".assert", ".debug",
-                        "stop", "warning"
-    
+                        "stop", "warning",
+                        "logical", "integer", "numeric", "list"
                        )  # for now
 
 
