@@ -45,7 +45,7 @@ function(node, cmp, helper, types)
   # FIXME: What if $fn is not a symbol?
   idx = match(node$fn$name, names(cmp$.compilerHandlers))
   if (is.na(idx)) 
-     compile.call(node, cmp, ir)
+     compile.call(node, cmp, helper)
   else 
     cmp$.compilerHandlers[[idx]](node, cmp, helper)
 }
