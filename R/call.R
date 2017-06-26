@@ -4,8 +4,8 @@ compile.call =
   #
 function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
 {
-   funName = as.character(call[[1]])
-
+   funName = as.character(call$fn$name)
+browser()
    if(.useHandlers && funName %in% names(env$.compilerHandlers))
        return(dispatchCompilerHandlers(call, env$.compilerHandlers, env, ir, ...))
 
@@ -15,7 +15,7 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
    if(funName == "<-" || funName == "=" || funName == "<<-")
       return(env$.compilerHandlers[["<-"]](call, env, ir, ...))  #XXX should lookup the  or "=" - was `compile.<-`
    else if(funName %in% c("numeric", "integer", "character", "logical")) {
-     if(length(call) == 1)
+     if(length(call$args) == 0)
        call[[2]] = 1L #XXX or 0 for an empty vector?
 
 
@@ -168,6 +168,9 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
    call
 }
 
+
+
+
 addFun =
 function(env, name, returnType, params)
 {
@@ -189,12 +192,8 @@ function(id, env)
 
 isTailFunction =
 function(fun, hints)
-{
-  if(inherits(fun, "TailFunction"))
-    return(TRUE)
+     inherits(fun, "TailFunction")
 
-  return(FALSE)
-}
 
 
 
