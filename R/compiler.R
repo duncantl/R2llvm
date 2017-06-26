@@ -16,7 +16,8 @@ function(.compilerHandlers = getCompilerHandlers(),
          block = NULL,
          fun = NULL,
          types = list(),
-         ...,  compiler = makeCompileEnv())
+         ...,
+         compiler = makeCompileEnv())
 {
     addToCompiler(compiler,
                     .compilerHandlers = .compilerHandlers,
