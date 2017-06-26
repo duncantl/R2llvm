@@ -8,21 +8,8 @@ function(block, types, ecompiler, builder, llvmFun, llvmBlocks = NULL)
      constructTerminator(block$terminator, ecompiler, builder, llvmBlocks)
 }
 
-constructTerminator =
-function(term, cmp, helper, blocks)
-  UseMethod("constructBranch")
 
 
-constructBranch.BrTerminator =
-function(term, cmp, helper, blocks)
-  helper$createBr(blocks[[ term$dest ]])
-
-constructBranch.RetTerminator =
-function(term, cmp, helper, blocks)
-{
-  var = cmp$getAlloc(term$value$name) 
-  helper$createRet(helper$createLoad(var))
-}
 
 
 
