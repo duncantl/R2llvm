@@ -7,5 +7,5 @@ function()
    list(1L, 2L)
 }
 
-compile_cfg(f)
+compileFunction(f)
 
