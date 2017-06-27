@@ -302,6 +302,12 @@ function(val, env, call = NULL)
     return(getReturnType(f))
   }
 
+  if(fun %in% c("[", "[[") && is.name(val[[2]])) {
+     vecType = getDataType(val[[2]], env)
+     #XXX if multiple indices in [[, handle this.
+     return(getElementType(vecType, direct = FALSE))
+  }
+
   #XXX Builtin types that we know about.
   
   warning("can't tell type of call ", paste(deparse(val), collapse = " "))
