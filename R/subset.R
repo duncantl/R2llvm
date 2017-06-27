@@ -24,12 +24,21 @@ subsetHandler =
 #  - SExt: http://llvm.org/docs/LangRef.html#i_sext
 function(call, env, ir, ..., objType = getElementAssignmentContainerType(call, env), load = TRUE, SEXPToPrimitive = TRUE, .targetType = NULL)
 {
+browser()  
 
-  if(length(call$args) >= 3)
+    if(is(call, "Call")) {
+        op = call$fn$name
+        args = call$args
+    } else {
+        op = as.character(call[[1]])
+        args = as.list(call[-1])
+    }
+
+  if(length(args) >= 3)
                     # perhaps make this a separate method and have the generic dispatcher call it.
       return(multiSubset(call, env, ir, ..., load = load, SEXPToPrimitive = SEXPToPrimitive))
 
-browser()  
+
   if(is(objType, "SEXPType")) {  # is this already in compile.=? If so, consolidate.
     if(SEXPToPrimitive) {
       r = getSEXPTypeElementAccessor(objType)
@@ -40,8 +49,8 @@ browser()
          #  .tmp = REAL(x)
          #  .tmp[i]
          # This is to avoid duplicating code elsewhere.
-      e1 = substitute(.tmp <- f(x), list(f = as.name(r), x = asRCall(call$args[[1]])))
-      e2 = substitute(.tmp[i], list(i = asRCall(call$args[[2]])))
+      e1 = substitute(.tmp <- f(x), list(f = as.name(r), x = asRCall(args[[1]])))
+      e2 = substitute(.tmp[i], list(i = asRCall(args[[2]])))
 
       if(length(env$.loopStack)) {
           # This is for cases such as for() {  .tmp = REAL(x) ; .tmp[i] } where we added the .tmp = REAL() into 
@@ -59,7 +68,7 @@ browser()
           term = getTerminator(env$.entryBlock)  #XXX is this always the entry block????
           eraseFromParent(term, FALSE)
           setInsertBlock(ir, env$.entryBlock)
-          tmpVarName = e2[[2]] = e1[[2]] =  as.name(sprintf("%s.%s", r, as.character(call$args[[1]]))) # make a fake name
+          tmpVarName = e2[[2]] = e1[[2]] =  as.name(sprintf("%s.%s", r, as.character(args[[1]]))) # make a fake name
           compile(e1, env, ir)
           insertAtEnd(term, env$.entryBlock)
           setInsertBlock(ir, cur)
@@ -72,13 +81,9 @@ browser()
        stop("subsetting SEXPs as SEXPs is not implemented yet")
     }
 
-  if(is(call, "Call")) {
-     var = call$args[[1]]
-     ridx = call$args[[2]]
-  } else {
-     var = call[[2]]
-     ridx = call[[3]]
-  }
+    var = args[[1]]
+    ridx = args[[2]]
+
  
         # ty = getDataType(obj, env)
      # do we need to load this.  The compile.= function 
