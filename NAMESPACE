@@ -95,7 +95,12 @@ S3method(translate_type, "typesys::ArrayType")
 
 export(construct_ir)
 S3method(construct_ir, "Assign")
+S3method(construct_ir, "Call")
 S3method(construct_ir, "Integer")
+S3method(construct_ir, "Numeric")
 S3method(construct_ir, "RetTerminator")
 S3method(construct_ir, "BrTerminator")
+S3method(construct_ir, "Replacement")
 
+
+exportMethods("coerce")
