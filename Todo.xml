@@ -10,7 +10,11 @@
 
 <item>
 The return value from tests2/numeric.R is corrupted.
-Issues with PROTECT() calls? 
+Issues with PROTECT() calls?  or Rffi?
+</item>
+
+<item>
+Insert Rf_unprotect(num) into the return BasicBlock.
 </item>
 
 <item>
@@ -20,6 +24,7 @@ Fix the constInputs() function.  See examples in tests2/ where we have to specif
 Fix subsetHandler for the loop case to put the access of the SEXP type not in the entry block, but
 in the initialization block for the loop.
 </item>
+
 <item>
 In subsetHandler() for the .loopStack case for a SEXP, insert the accessor before
 the terminator, and don't erase and reinsert the terminator.
@@ -32,6 +37,10 @@ Then insert a call to unprotect(n) at the end.
 
 <item>
 Make numeric(1) (rather than 1L) compile properly.
+And Rf_unprotect(1).  Basically, cast Literals appropriately.
+</item>
+<item>
+Do general casting when we have non-literal values.
 </item>
 
 <item status="done">
@@ -53,8 +62,10 @@ as a target type and that could make the code more efficient as we know what we 
 
 </item>
 
-<item>
+<item status="partial">
 Switch over to AST classes for Calls, Symbols, Integer, Real, ...
+<br/>
+Partially done
 </item>
 
 <item>
@@ -70,7 +81,7 @@ Compile Rllvm with LLVM 3.8.
 
 
 <item status="done">
-The name "%<environment>" coming into the module for xplus.R.
+The name "%&gt;environment&lt;" coming into the module for xplus.R.
 This is the deparse(origCall)
 </item>
 
