@@ -987,9 +987,9 @@ function(..., env = NULL, useFloat = FALSE)
        STRING_ELT = list(getSEXPType("CHAR"), getSEXPType("STR"), Int32Type), # long vectors?
        SET_STRING_ELT = list(SEXPType, getSEXPType("STR"), Int32Type, getSEXPType("CHAR")), # XXX may need different type for the index for long vector support.       
        SET_VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type, SEXPType), # XXX may need different type for the index for long vector support.
-     R_SET_VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type, SEXPType), # XXX may need different type for the index for long vector support.     
+#     R_SET_VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type, SEXPType), # XXX may need different type for the index for long vector support.     
        VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type),
-     R_VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type),
+#     R_VECTOR_ELT = list(SEXPType, getSEXPType("VEC"), Int32Type),
        SETCAR = list(SEXPType, SEXPType, SEXPType),
        SETCDR = list(SEXPType, SEXPType, SEXPType),
        SET_TAG = list(VoidType, SEXPType, SEXPType),
