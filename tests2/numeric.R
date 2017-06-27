@@ -1,8 +1,9 @@
 library(R2llvm)
-f = function() numeric(10L)
+f = function() numeric(10)
 fc = compileFunction(f)
-llvmAddSymbol("R_allocVector")
+llvmAddSymbol("Rf_allocVector")
 
 showModule(fc)
 .llvm(fc)
 # Why not identical to 0
+

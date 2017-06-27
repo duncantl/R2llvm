@@ -12,3 +12,14 @@ llvmAddSymbol("R_REAL")
 
 stopifnot(identical(.llvm(fc, c(101, 20)), 101))
 
+
+#########
+
+types = RTypeInference::infer_types(cfg, init = list(x = ArrayType(IntegerType()))) 
+fc = compileFunction(f, cfg = cfg, types = types, .readOnly = "x")
+# Need proxy routine for REAL() and to llvmAddSymbol() it.
+llvmAddSymbol("R_INTEGER")
+
+stopifnot(identical(.llvm(fc, c(101L, 20L)), 101L))
+
+
