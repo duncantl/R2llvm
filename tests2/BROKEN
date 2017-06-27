@@ -1,0 +1,20 @@
+# BROKEN
+
+
+# ISSUES
+numeric.R
+numeric1.R
+
+# NOT EXPECTED TO WORK
+addI.R
+
+# WORKING
+subset.R
+assignSubset.R
+one.R
+onePlus.R
+logicOps.R
+list.R
+cast.R
+xplus.R
+sexp.R
