@@ -56,7 +56,7 @@ function(code, call, results = new.env(parent=emptyenv())) {
 isNumericLiteral =
 function(expr) {
   # TODO no complex cases yet
-  if (class(expr) %in% c('numeric', 'integer'))
+  if (is(expr, "numeric") || is(expr, 'integer'))
     return(TRUE)
   return(FALSE)
 }
@@ -70,10 +70,10 @@ function(expr) {
 isLiteral =
 # Check against any type of literal
 function(expr) {
-  i = (isStringLiteral(expr) || isNumericLiteral(expr))
+  i = (isStringLiteral(expr) || isNumericLiteral(expr)) || is(expr, "Integer") || is(expr, "Numeric")
   if(i)
     return(i)
-
+  
   length(expr) == 2 && (is.call(expr) && as.character(expr[[1]]) %in% c("+", "-") && isLiteral(expr[[2]]))
 }
 
