@@ -29,12 +29,20 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
 # }
 
 
+    if(is(call, "Call")) {
+        op = call$fn$name
+        args = call$args
+    } else {
+        op = as.character(call[[1]])
+        args = as.list(call[-1])
+    }
+    
    
-  if(length(call$args) == 1) {  # So a unary operation
+  if(length(args) == 1) {  # So a unary operation
        #XXX temporary exploration
         # if this is +, e.g. +n, we should just compile call[[2]]
-     if(call$fn$name == "+")
-        return(construct_ir(call$args[[1]], env, ir, env$.types)) # ..., isSubsetIndex = isSubsetIndex))
+     if(op == "+")
+        return(construct_ir(args[[1]], env, ir, env$.types)) # ..., isSubsetIndex = isSubsetIndex))
 
       # XXX what about !
      k = quote(0 - 0)
@@ -43,7 +51,7 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
      call = k
  }  # Finished with unary operation
  
-  args = lapply(call$args, rewriteExpressions, env, isSubsetIndex = isSubsetIndex)
+  args = lapply(args, rewriteExpressions, env, isSubsetIndex = isSubsetIndex)
 
   origCall = call
 
@@ -52,7 +60,7 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
   if(all(lit)) {
           # The two operands are literal values so no need to compile run-time code.
           # So compute the result here and return.
-    value = do.call(get(call$fn$name), lapply(call$args, function(x) x$value))
+    value = do.call(get(op), lapply(args, asLiteral)) # function(x) x$value))
     if(is.numeric(value) && env$.useFloat)
        return(createFloatingPointConstant(value, getContext(env$.module), FloatType))
     else
@@ -67,6 +75,7 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
 
      # we are getting the types here w/o compiling the expressions (?). So they may not be what we end up with.
   types = lapply(args, getTypes, env)
+#XXX FIX    
   if(any(nulls <- sapply(types, is.null))) {
      i = which(nulls) + 1L
      call[i] = lapply(call[i], compile, env, ir, ...)
@@ -93,11 +102,11 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
           # to cast.
     typeMatches = sapply(types, sameType, targetType)
     if(any(!typeMatches))
-       toCast = as.list(call$args)[[which(!typeMatches)]]
+       toCast = as.list(args)[[which(!typeMatches)]]
   }
 
   isIntType = sameType(targetType, Int32Type) || sameType(targetType, Int64Type)
-  e = lapply(call$args, prepareValue, targetType, isIntType, toCast, env, ir, ...)
+  e = lapply(args, prepareValue, targetType, isIntType, toCast, env, ir, ...)
 
     # XXX Have to deal with different types.
   if(isIntType)
@@ -106,7 +115,7 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
      codes = c("+" = "FAdd", "-" = "FSub", "*" = "FMul", "/" = "FDiv", "%/%" = "FRem")
 
 
-  opName = as.character(call$fn$name)
+  opName = as.character(op)
   if(opName %in% names(codes))
     op = structure(BinaryOps[[ codes[ opName ] ]], names = opName)
   else
