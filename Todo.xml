@@ -9,6 +9,19 @@
 <items>
 
 <item>
+Make math and [done] logic handler functions deal with both types of calls.
+</item>
+
+<item>
+Put the .targetType into the calls to compile() now that we have the intended types.
+</item>
+
+<item>
+When returning an element from a  logical vector,  return an int32.
+See subset.R
+</item>
+
+<item>
 The return value from tests2/numeric.R is corrupted.
 Issues with PROTECT() calls?  or Rffi?
 </item>
