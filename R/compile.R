@@ -4,37 +4,6 @@
 MathOps = c("+", "-", "*", "/", "%/%", "^")
 LogicOps = c("<", ">", "<=", ">=", "!=", "==", "!")
 
-#??? Kill off
-XXXX.assignHandler =
-function(call, env, ir)
-{
-   args = call[-1]
-
-   val = compile(args[[2]], env, ir)
-
-          # CreateLocalVariable, with a reference in the
-          # environment, and then CreateStore of the value.
-   checkArgs(args, list(c('character', 'symbol'), 'ANY'), '<-')
-     # XXX may not be a variable
-   if(is.name(var))
-      var <- as.character(args[1])
-   
-   val <- args[[2]]
-   if (is.na(findVar(var, env))) {
-        # Create new local store, TODO remove the type here and infer it
-     type = getDataType(val, env)
-     assign(var, createFunctionVariable(type, var, env, ir), envir = env) ## Todo fix type
-     env$.types[[var]] = type
-   }
-   
-   ref <- get(var, envir = env)
-
-      # Now, create store. TODO: how does this work *without*
-      # constants? Where is evaluation handled... probably not
-      # here?
-   createStore(ir, val, ref)
- }
-
 getBasicType =
 function(call)
 {
@@ -59,12 +28,16 @@ function(call)
 
 setGeneric("isSubsettingAssignment", function(call) standardGeneric("isSubsettingAssignment"))
 
-setMethod("isSubsettingAssignment", "call",
+tmp =
 function(call) {  
   length(call) > 1 &&
    is.call(tmp <- call[[2]]) &&
     as.character(tmp[[1]]) %in% c("[", "[[")
-})
+}    
+setMethod("isSubsettingAssignment", "call", tmp)
+setMethod("isSubsettingAssignment", "=", tmp)
+setMethod("isSubsettingAssignment", "<-", tmp)
+
 
 tmp =
 function(call)          
@@ -83,43 +56,57 @@ setMethod("isSubsettingAssignment", "Replacement", function(call) TRUE)
 assignHandler = `compile.=` =   # `compile.<-` 
   # Second version here so I don't mess the other one up.
   #
-  # XXX   This is now getting to long. Break it up and streamline.
+  # XXX   This is now getting too long. Break it up and streamline.
   #
 function(call, env, ir, ..., .useHandler = TRUE)
 {
 
 #   if(.useHandler && !is.na(i <- match(as.character(call[[1]]), names(env$.compilerHandlers)))) 
 #       return(env$.compilerHandlers[[i]](call, env, ir, ...))
+    
+if(is(call, "Replacement"))
+    call = asRCall(call)
+
    if(is(call, "Call"))
       args = call$args
    else
-      args = call[-1]  # drop the = or <-
+      args = as.list(call[-1])  # drop the = or <-
    
    stringLiteral = FALSE
    type = NULL
 
    
 #XXX may not need to do this but maybe can compile the RHS as usual.
-   if(isSubsettingAssignment(call) && is(ty <- getElementAssignmentContainerType(args[[1]], env), "STRSXPType")) {
+   if(isSubsettingAssignment(call) && is(ty <- getElementAssignmentContainerType(args[[1]], env), "STRSXPType")) 
      return(assignToSEXPElement(args[[1]], args[[2]], env, ir, type = ty))
-   }
+
+#!!!!!XXX The Replacement object is different from the way R represents the assignment
+# In R,   x[1L] = 10 is represented as  =(x[1L], 10) - so a call with 2 arguments.
+# The Replacement class inherits from Cal and the function being called is [<- and
+# There are 3 arguments to this call x, 1L, and 10   
+# In an expression such as x[1, 2] = foo(3, 4)
+# we get 4 arguments x, 1, 2 and foo(3, 4).
 browser()   
-       # look at the RHS
-   if(isLiteral(args[[2]])) {  #!! these are the args, not the call - so first element is not = or <-, but the LHS.
+       # look at the RHS - is this the RHS?
+   rhs = args[[length(args)]]
+   if(isLiteral(rhs)) {  #!! these are the args, not the call - so first element is not = or <-, but the LHS.
          # Do we need to eval() this. If it is really literal, no.
-      tmp = val = if(is(args[[2]], "Literal")) args[[2]]$value else eval(args[[2]])
+      tmp = val = if(is(rhs, "Literal")) rhs$value else eval(rhs)
       ctx = getContext(env$.module)
 
+       
       lhs.type = getDataType(args[[1]], env)
-
-      if( !is.character(tmp) && (is.null(lhs.type) || !sameType(DoubleType, lhs.type))  && env$.integerLiterals  && val == floor(val) ){
+        # What is this doing?
+        # So not a character, and we don't know the lhs type or we know it isn't
+      if( !is.character(tmp) && (is.null(lhs.type) || !sameType(DoubleType, lhs.type))  && env$.integerLiterals  && val == floor(val) )
           tmp = val = as.integer(val)
-      }
+
       if(!is.null(lhs.type))
           type = lhs.type
       else
            type = getDataType(I(val), env)
-      
+
+#XXX  What if this is an expression??
       val = makeConstant(ir, val, type, ctx)
       type = getDataType(val, env)
       if(is.character(tmp)) 
@@ -184,7 +171,8 @@ browser()
          }
 
          assign(var, ref <- createFunctionVariable(type, var, env, ir), envir = env) ## Todo fix type and put into env$.types
-         env$.types[[var]] = type
+         if(!(var %in% names(env$.types)))
+            env$.types[[var]] = type
        }
    } else {
 
@@ -198,10 +186,10 @@ browser()
       #XXXX What does removing load = FALSE affect. Find examples of where this breaks matters.
       # fuseLoops?
         ref = compile(expr, env, ir, ..., load = FALSE)
-   }
+  }
 
    if(!is.null(val)) {
-#browser()
+
       if(!sameType(getType(val), getElementType(getType(ref)))) {
 #XXX
 #cat("fix this cast\n")
@@ -217,6 +205,7 @@ browser()
       }
    }
 
+# Probably don't want to set this anymore, or certainly not for x[1] but only when is.name(args[[1]])
    setVarType(env, args[[1]], val)
 
 
@@ -251,10 +240,14 @@ getElementAssignmentContainerType =
   #
 function(call, env)
 {
-   if(is.name(call))
-      var = call
-   else
-      var = call$args[[1]] # [[2]]
+   var = if(is.name(call))
+           call
+         else {
+          if(is(call, "Call"))
+              call$args[[1]] # [[2]]
+          else
+              call[[2]]
+         }
 
    getDataType(var, env)
 }
@@ -270,7 +263,9 @@ function(type, id, env, ir)
   cur = getInsertBlock(ir)
   setInsertPoint(ir, env$.entryBlock)
   on.exit(setInsertPoint(ir, cur))
-  createLocalVariable(ir, type, id, TRUE)  # to insert before terminator.
+  var = createLocalVariable(ir, type, id, TRUE)  # to insert before terminator.
+  env$newAlloc(id, var)
+  var
 }
 
 
@@ -876,8 +871,11 @@ function(mod, ..., .funcs = list(...), .lookup = TRUE, .addMetaData = TRUE)
   if(.lookup) {
     syms = lapply(names(.funcs),
                     function(x) {
-                       info = getNativeSymbolInfo(x)
-                       if(.addMetaData) {
+                       info = tryCatch(getNativeSymbolInfo(x),
+                                        error = function(e)
+                                           as(x, "NativeSymbol"))
+                       
+                       if(.addMetaData && is(info, "NativeSymbolInfo")) {
                            pkg = info$package
                              # do we need the path? yes if it is not part of a package.
                              # Some of these will be "wrong", i.e. too specific
@@ -888,7 +886,10 @@ function(mod, ..., .funcs = list(...), .lookup = TRUE, .addMetaData = TRUE)
                            setMetadata(mod, sprintf("symbolInfo.%s", info$name),
                                             list("package", pkg[["name"]], "path", pkg[["path"]]))
                        }
-                       info$address
+                       if(is(info, "NativeSymbolInfo"))
+                          info$address
+                       else
+                          info
                     })
     llvmAddSymbol(.syms = structure( syms, names = names(.funcs)))
   }
@@ -1193,7 +1194,13 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
 compile.Numeric =
 function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
 {
-  construct_ir(call, env, ir, env$.types)
+     # Prototype for casting. Needs to be more comprehensive.
+   val = call$value
+   if(!is.null(.targetType)) {
+      if(sameType(.targetType, Int32Type))
+         val = as.integer(val)
+   }
+   createConstant(ir, val)
 }
 
 compile.Call =
@@ -1201,3 +1208,48 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
 {
   construct_ir(call, env, ir, env$.types)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+#########################
+
+#??? Kill off
+XXXX.assignHandler =
+function(call, env, ir)
+{
+   args = call[-1]
+
+   val = compile(args[[2]], env, ir)
+
+          # CreateLocalVariable, with a reference in the
+          # environment, and then CreateStore of the value.
+   checkArgs(args, list(c('character', 'symbol'), 'ANY'), '<-')
+     # XXX may not be a variable
+   if(is.name(var))
+      var <- as.character(args[1])
+   
+   val <- args[[2]]
+   if (is.na(findVar(var, env))) {
+        # Create new local store, TODO remove the type here and infer it
+     type = getDataType(val, env)
+     assign(var, createFunctionVariable(type, var, env, ir), envir = env) ## Todo fix type
+     env$.types[[var]] = type
+   }
+   
+   ref <- get(var, envir = env)
+
+      # Now, create store. TODO: how does this work *without*
+      # constants? Where is evaluation handled... probably not
+      # here?
+   createStore(ir, val, ref)
+ }
