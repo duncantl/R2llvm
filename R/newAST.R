@@ -3,9 +3,14 @@ setOldClass("Literal")
 setOldClass("Call")
 setOldClass(c("Integer", "Literal"))
 setOldClass(c("Numeric", "Literal"))
+setOldClass("ASTNode")
 
-
-setGeneric("asRCall", function(x, ...) standardGeneric("asRCall"))
+setGeneric("asRCall", function(x, ...) {
+       if(!is(x, "ASTNode"))
+           return(x)
+       
+       standardGeneric("asRCall")
+     })
 
 setMethod("asRCall", "Symbol",
           function(x)
