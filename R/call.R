@@ -14,7 +14,7 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
        astCall = FALSE
    }
        
-
+#browser()
 
    if(.useHandlers && funName %in% names(env$.compilerHandlers))
        return(dispatchCompilerHandlers(call, env$.compilerHandlers, env, ir, ...))
@@ -35,8 +35,9 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
                      character = "STRSXPType",
                      logical = "LGLSXPType")
 
-     funName <- "R_allocVector"
-     call = substitute(R_allocVector(type, len), list(type = getSEXPTypeNumByConstructorName(funName), len = args[[1]]))
+     call = substitute(Rf_allocVector(type, len), list(type = getSEXPTypeNumByConstructorName(funName), len = args[[1]]))
+     funName <- "Rf_allocVector"
+     args = as.list(call[-1])
 #     call$args[[2]] = Integer$new(call$args[[1]]$value)
 #     call$args[[1]] = Integer$new(getSEXPTypeNumByConstructorName(funName))
 #     call$fn = Symbol$new( funName <- "R_allocVector")
@@ -112,6 +113,22 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
    
    funName = mapRoutineName(funName)
 
+   if(funName == "list") {
+      # Need to allocate the list, protect it and then evaluate the elements and insert them.
+      #
+      e = substitute(Rf_allocVector(type, len), list(type = getSEXPTypeNumByConstructorName(funName), len = length(args)))
+      obj = compile.call(e, env, ir, ...)
+      e = substitute(Rf_protect(obj), list(obj = obj))
+      protect = compile.call(e, env, ir, ...)
+      for(i in seq(along = args)) {
+          e = substitute(R_SET_VECTOR_ELT(obj, pos, val), list(obj = obj, pos = i-1L, val = args[[i]]))
+          compile.call(e, env, ir, ...)
+      }
+      e = substitute(Rf_ununprotect_ptr(obj), list(obj = obj))
+      protect = compile.call(e, env, ir, ...)
+      return(obj)
+   }
+
 
    v <- getVariable(funName, env)
    ofun = NULL
@@ -157,6 +174,7 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
           stop(err)
        }
    }
+#browser()   
    args = mapply(function(e, ty)
                    compile(e, env, ir, ..., .targetType = ty),  # ... and fun, name,
                  args, targetTypes)
