@@ -118,7 +118,7 @@ getSEXPTypeElementAccessor =
 function(type, env, addProxy = FALSE)
 {
   x =
-   if(is(type, "INTSXPType") || is(type, "LGLSXP") || sameType(type, Int32Type) )
+   if(is(type, "INTSXPType") || is(type, "LGLSXPType") || sameType(type, Int32Type) )
       "INTEGER"
    else if(is(type, "REALSXPType") || sameType(type, DoubleType) ) # This DoubleType is for when we are dealing with a matrix and have the element type.
       'REAL'
