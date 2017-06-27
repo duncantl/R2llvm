@@ -5,4 +5,5 @@ types = RTypeInference::infer_types(cfg, init = list(x = ArrayType(RealType())))
 fc = compileFunction(f, cfg = cfg, types = types, .readOnly = "x")
 
 showModule(fc)
-.llvm(fc, c(1, 20))
+orig = c(1, 20)
+stopifnot(identical(.llvm(fc, orig), orig))
