@@ -121,10 +121,10 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
       e = substitute(Rf_protect(obj), list(obj = obj))
       protect = compile.call(e, env, ir, ...)
       for(i in seq(along = args)) {
-          e = substitute(R_SET_VECTOR_ELT(obj, pos, val), list(obj = obj, pos = i-1L, val = args[[i]]))
+          e = substitute(SET_VECTOR_ELT(obj, pos, val), list(obj = obj, pos = i-1L, val = args[[i]]))
           compile.call(e, env, ir, ...)
       }
-      e = substitute(Rf_ununprotect_ptr(obj), list(obj = obj))
+      e = substitute(Rf_unprotect_ptr(obj), list(obj = obj))
       protect = compile.call(e, env, ir, ...)
       return(obj)
    }
