@@ -16,6 +16,6 @@ function(term, cmp, helper, blocks)
 constructBranch.CondBrTerminator =
 function(term, cmp, helper, blocks)
 {
-  cond = construct_ir(term$condition, cmp, helper)
+  cond = compile(term$condition, cmp, helper) # , cmp$.types)
   helper$createCondBr( cond, blocks[[ term$true ]], blocks[[ term$false ]])
 }
