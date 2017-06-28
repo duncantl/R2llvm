@@ -101,6 +101,8 @@ S3method(construct_ir, "Numeric")
 S3method(construct_ir, "RetTerminator")
 S3method(construct_ir, "BrTerminator")
 S3method(construct_ir, "Replacement")
+S3method(construct_ir, "Replacement")
+S3method(construct_ir, "Phi")
 
 
 exportMethods("coerce")
