@@ -86,7 +86,11 @@ if(is(call, "Replacement"))
 # There are 3 arguments to this call x, 1L, and 10   
 # In an expression such as x[1, 2] = foo(3, 4)
 # we get 4 arguments x, 1, 2 and foo(3, 4).
-browser()   
+
+
+#browser()
+
+
        # look at the RHS - is this the RHS?
    rhs = args[[length(args)]]
    if(isLiteral(rhs)) {  #!! these are the args, not the call - so first element is not = or <-, but the LHS.
@@ -596,6 +600,7 @@ function(fun,
        stop("need to specify the types for all of the arguments for the ", name, " function")
 
 
+
 #XX Revisit when the switch to the new types is working      
 if(FALSE) {
       # See if we have some SEXP types for which we may need to know the length.
@@ -680,6 +685,7 @@ if(FALSE) {
     ir <- IRBuilder(block)
 
 
+
 #XXX temporary to see if we should declare and load these individually when we encounter them
 # Really need the user to specify the DLL not just the name in case of ambiguities, so often easier to do this separately.
     if(.loadExternalRoutines && length(.routineInfo))
@@ -724,6 +730,11 @@ if(FALSE) {
 
     nenv$blocks = blocks
     nenv$cfg.blocks = cfg.blocks
+
+
+           # Doing gymnastics that should be done in rstatic. XXX Remove later
+    phiVarNames = unlist(findPhiAssignVarNames(cfg))
+    nenv$.phiVarInstructions = structure(vector("list", length(phiVarNames)), names = phiVarNames)
 
 
 

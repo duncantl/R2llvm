@@ -20,6 +20,13 @@ function(node, cmp, helper,  types, .targetType = NULL) {
 construct_ir.Assign =
 function(node, cmp, helper,  types, .targetType = NULL)
 {
+    # For dealing with assignments that are actually for Phi nodes.
+if(node$write$name %in% names(cmp$.phiVarInstructions)) {
+    i = compile(node$read, cmp, helper, .targetType = .targetType)
+    cmp$.phiVarInstructions[node$write$name] = i
+    return(i)
+}
+
    call = asRCall(node)
    return(`compile.=`(call, cmp, helper, .targetType = .targetType))
     
@@ -39,7 +46,7 @@ if(node$write$name != "._return_") {
   if(!sameType(rtype, type)) 
     rhs = createCast(cmp, helper, type, rtype, rhs)
 }
-browser()  
+
   helper$createStore(rhs, lhs)
 
   lhs
@@ -57,28 +64,40 @@ function(node, cmp, helper,  types, .targetType = NULL)
 }
 
 construct_ir.Phi =
-function(node, cmp, helper,  types, .targetType = NULL) {
-browser()    
+function(node, cmp, helper,  types, .targetType = NULL)
+{
+
   # Don't insert phis for shadowed globals.
-  if ( any(is_global(node$read)) )
-    return (NULL)
+#XXXX
+#  if ( any(is_global(node$read)) )
+#    return (NULL)
 
   type = types[[node$write$name]]
-  helper$create_phi(type, node$write$name)
+  numIncoming = length(node$blocks)
+  phi = Rllvm::createPhi(helper, type, numIncoming, id = node$write$name)
+# Add the incoming. We have them in the node$blocks and in node$read
 
-  #Map(function(b, name) {
-  #  llvm_block = helper$get_llvm_block(b)
-  #  val = helper$get_alloc(name)
-  #  Rllvm::addIncoming(phi, val, llvm_block)
-  #}, as.integer(names(node$read)), node$read)
+  mapply(function(var, block) {
+           val = cmp$.phiVarInstructions[[ var$name ]]
+# Are we supposed to createLoad(val). Get a "Instruction does not dominate all uses!" error.
+           addIncoming(phi, val, block)
+         }, node$read, cmp$blocks[node$blocks])
+
+  cmp$.allocVars[[ node$write$name ]] <- phi
+#  e = substitute(x <- y, list(x = as.name(node$write$name), y = phi))
+#  v = `compile.=`(e, cmp, helper)
+  phi
 }
 
 construct_ir.Symbol =
 function(node, cmp, helper,  types, .targetType = NULL)
 {
+#browser()    
   v = cmp$getAlloc(node$name)
-  if(is.null(v))
+  if(is.null(v)) {
      v = cmp$.params[[ node$name ]]
+     return(v)
+  }
 #  v  
   helper$createLoad( v )
 }
@@ -121,3 +140,5 @@ function(node, cmp, helper,  types, .targetType = NULL)
 # else 
 #   cmp$.compilerHandlers[[idx]](node, cmp, helper)    
 }
+
+
