@@ -66,7 +66,7 @@ function(node, cmp, helper,  types, .targetType = NULL)
 construct_ir.Phi =
 function(node, cmp, helper,  types, .targetType = NULL)
 {
-
+    
   # Don't insert phis for shadowed globals.
 #XXXX
 #  if ( any(is_global(node$read)) )
@@ -83,7 +83,11 @@ function(node, cmp, helper,  types, .targetType = NULL)
            addIncoming(phi, val, block)
          }, node$read, cmp$blocks[node$blocks])
 
-  cmp$.allocVars[[ node$write$name ]] <- phi
+  if(node$write$name %in% names(cmp$.phiVarInstructions)) 
+     cmp$.phiVarInstructions[[ node$write$name ]] <- phi
+  else
+     cmp$.allocVars[[ node$write$name ]] <- phi
+
 #  e = substitute(x <- y, list(x = as.name(node$write$name), y = phi))
 #  v = `compile.=`(e, cmp, helper)
   phi

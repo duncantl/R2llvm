@@ -672,7 +672,7 @@ if(FALSE) {
 
 
 
-
+browser()
     cfg.blocks = cfg$blocks[ rev(rstatic::postorder(cfg)) ]
 #    names(cfg.blocks)[1] = "entry"
     blocks = lapply(names(cfg.blocks), function(i) Block(llvm.fun, i))
