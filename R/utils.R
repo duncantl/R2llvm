@@ -99,6 +99,9 @@ function(sym, env, ir = NULL, load = TRUE, search.params=TRUE, searchR = FALSE, 
      return(sym)
     
   sym = as.character(sym)
+  if(sym %in% names(env$.allocVars))
+      return(env$.allocVars[[sym]])
+  
   var = if(exists(sym, env)) {
                # The local variables we create in the function
                # are alloc'ed and so are pointers. They need to be
