@@ -8,7 +8,7 @@ mathHandler =
   #
   #
   #
-function(call, env, ir, ..., isSubsetIndex = FALSE)  
+function(call, env, ir, ..., isSubsetIndex = FALSE, .targetType = NULL)  
 {
 # if(FALSE && length(call) == 2)  {
 #    # unary operator - most likely -
@@ -50,7 +50,9 @@ function(call, env, ir, ..., isSubsetIndex = FALSE)
      k[[1]] = call[[1]]
      call = k
  }  # Finished with unary operation
- 
+
+
+    
   args = lapply(args, rewriteExpressions, env, isSubsetIndex = isSubsetIndex)
 
   origCall = call
@@ -191,7 +193,12 @@ function(x, targetType, isIntType, toCast, env, ir, ...)
         else
           createFloatingPointConstant(as.numeric(x), type = FloatType)
      } else if(is.name(x)) {
-        var = getVariable(x, env, ir)         
+        var = getVariable(x, env, ir)
+
+            # don't load if this is an Argument, but do load if it is a local variable.
+        if(!is(var, "Argument"))
+           var = ir$createLoad(var)
+        
         if (!sameType(targetType, Rllvm::getType(var)))   # !is.null(toCast) && identical(x, toCast)
               # Casting to double needed
           return(createCast(env, ir, targetType, Rllvm::getType(var), var))
