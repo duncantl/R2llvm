@@ -1,7 +1,6 @@
 # BROKEN
 
 rw2d.R
-for.R
 runif.R
 dexp.R
 
@@ -15,6 +14,8 @@ numeric1.R
 # NOT EXPECTED TO WORK
 
 # WORKING
+for.R
+for2.R
 subset.R
 const.R
 assignSubset.R
