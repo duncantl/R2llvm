@@ -22,9 +22,9 @@ subsetHandler =
 # References:
 #  - GEP: http://llvm.org/docs/LangRef.html#i_getelementptr
 #  - SExt: http://llvm.org/docs/LangRef.html#i_sext
+    #XXXX load = TRUE was the default.
 function(call, env, ir, ..., objType = getElementAssignmentContainerType(call, env), load = TRUE, SEXPToPrimitive = TRUE, .targetType = NULL)
 {
-browser()  
 
     if(is(call, "Call")) {
         op = call$fn$name
