@@ -9,6 +9,22 @@
 <items>
 
 <item>
+Get rid of construct_ir() and map these to compile().
+</item>
+<item>
+Unify the names for the compiler parameter (e.g., comp, env, nenv) in the different functions/methods.
+</item>
+
+<item>
+2 dimensional subsetting.
+</item>
+
+<item>
+Add the code to compileFunction() to rewrite the for loops
+but to get the types from the original.
+</item>
+
+<item>
 Add more support in createCast (specifically the fromTypes, casters) to handle
 other types. See subset.R and subset2.R
 </item>
