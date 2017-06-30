@@ -768,7 +768,17 @@ if(FALSE) {
 
  ### here we are going to work on the blocks in the call graph and use a different approach.
     lapply(cfg.blocks, compileCFGBlock, types, nenv, ir, llvm.fun, blocks)
-          
+
+
+     # Fix the phiForwardRefs.  May need to find the nodes
+     # in additional places. Make separate function.
+   actualNodes = nenv$.phiVarInstructions[names(nenv$.phiForwardRefs)]
+   if(any(sapply(actualNodes, is.null)))
+       stop("Problem with phi node forward references")
+   mapply(replaceAllUsesWith,
+           nenv$.phiForwardRefs,
+           actualNodes)
+     
 #GONE    compileExpressions(fbody, nenv, ir, llvm.fun, name)
 
        # the second condition occurs when we have an if() with no else as the last expression
