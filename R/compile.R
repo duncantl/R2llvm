@@ -75,7 +75,7 @@ if(is(call, "Replacement"))
    stringLiteral = FALSE
    type = NULL
 
-   
+
 #XXX may not need to do this but maybe can compile the RHS as usual.
    if(isSubsettingAssignment(call) && is(ty <- getElementAssignmentContainerType(args[[1]], env), "STRSXPType")) 
      return(assignToSEXPElement(args[[1]], args[[2]], env, ir, type = ty))
@@ -87,8 +87,6 @@ if(is(call, "Replacement"))
 # In an expression such as x[1, 2] = foo(3, 4)
 # we get 4 arguments x, 1, 2 and foo(3, 4).
 
-
-#browser()
 
 
        # look at the RHS - is this the RHS?
@@ -130,7 +128,6 @@ if(is(call, "Replacement"))
     } else
       val = compile(args[[2]], env, ir)
 
-   
 
    if(is.name(args[[1]])) {
          var = as.character(args[[1]])
@@ -174,8 +171,12 @@ if(is(call, "Replacement"))
            type = StringType
          }
 
-         assign(var, ref <- createFunctionVariable(type, var, env, ir), envir = env) ## Todo fix type and put into env$.types
-         if(!(var %in% names(env$.types)))
+         ref <- createFunctionVariable(type, var, env, ir)
+         env$newAlloc(var, ref)
+   #XXX      assign(var, ref, envir = env)
+          
+           ## Todo fix type ???
+          if(!(var %in% names(env$.types)))
             env$.types[[var]] = type
        }
    } else {
@@ -200,7 +201,8 @@ if(is(call, "Replacement"))
 #         val = Rllvm::createCast(ir, "SIToFP", val, getElementType(getType(ref)))
 	  val = createCast(env, ir, getElementType(getType(ref)), getType(val), val)
       }
-        
+
+
       store = ir$createStore(val, ref)
       if(!is.null(tmp <- attr(val, "zeroBasedCounting"))) {
          attr(ref, "zeroBasedCounting") = tmp
@@ -558,7 +560,7 @@ function(fun,
    if(is.logical(.assert))
       .assert = if(.assert) ".assert" else character()
 
-#probably goes   
+#this probably goes   
    if(!missing(types) && !is.list(types))
       types = structure(list(types), names = names(formals(fun))[1])
 
@@ -729,6 +731,7 @@ if(FALSE) {
 
     nenv$blocks = blocks
     nenv$cfg.blocks = cfg.blocks
+    nenv$.cfg = cfg
 
 
            # Doing gymnastics that should be done in rstatic. XXX Remove later
@@ -1216,7 +1219,11 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
 compile.Call =
 function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
 {
-  construct_ir(call, env, ir, env$.types)
+  idx = match(call$fn$name, names(env$.compilerHandlers))
+  if(is.na(idx)) 
+     compile.call(call, env, ir, .targetType = .targetType)
+  else 
+     env$.compilerHandlers[[idx]](call, env, ir, .targetType = .targetType)    
 }
 
 
