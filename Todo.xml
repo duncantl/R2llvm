@@ -9,7 +9,30 @@
 <items>
 
 <item>
-Make math and [done] logic handler functions deal with both types of calls.
+Add more support in createCast (specifically the fromTypes, casters) to handle
+other types. See subset.R and subset2.R
+</item>
+
+<item>
+Example of compiled SQL command - compile a fitted tree model and do prediction
+on each row of a database.
+</item>
+
+<item>
+tests/constString.R - lots of things to deal with: type inference, creating the CHARSXP and STRSXP.
+</item>
+
+
+<item>
+tests2/numeric.R and tests2/numeric1.R return odd numeric vectors.
+</item>
+
+<item>
+Does rewriteExpression know about the AST nodes.
+</item>
+
+<item>
+Make math and [done] logic handler functions deal with both types of calls - AST and R's own language objects.
 </item>
 
 <item>
@@ -33,8 +56,13 @@ Insert Rf_unprotect(num) into the return BasicBlock.
 <item>
 Fix the constInputs() function.  See examples in tests2/ where we have to specify .readOnly = "x"
 </item>
+
 <item>
-Fix subsetHandler for the loop case to put the access of the SEXP type not in the entry block, but
+Rewrite calls, e.g. runif(1) to Rf_runif(a, b) where a, b come from the defaults of the runif() function.
+</item>
+
+<item>
+Fix subsetHandler for the loop case to put the access of the SEXP type (e.g. REAL(x)) not in the entry block, but
 in the initialization block for the loop.
 </item>
 
@@ -52,6 +80,7 @@ Then insert a call to unprotect(n) at the end.
 Make numeric(1) (rather than 1L) compile properly.
 And Rf_unprotect(1).  Basically, cast Literals appropriately.
 </item>
+
 <item>
 Do general casting when we have non-literal values.
 </item>
@@ -65,14 +94,13 @@ string to a NativeSymbol object.
 This is not portable beyond systems having dlopen(). So we'll have to work on a solution for Windows.
 </item>
 
-<item>
+<item status="done">
 Get the SSA names for parameters to be the original parameter names.
 </item>
 
 <item>
 When we know the types of variables before we compile the RHS, we can specify this type 
 as a target type and that could make the code more efficient as we know what we are working towards. Example?
-
 </item>
 
 <item status="partial">
@@ -81,7 +109,7 @@ Switch over to AST classes for Calls, Symbols, Integer, Real, ...
 Partially done
 </item>
 
-<item>
+<item status="done">
 Get xplus.R working with a RealType as the parameter so we have to cast the 1L
 </item>
 
@@ -96,6 +124,10 @@ Compile Rllvm with LLVM 3.8.
 <item status="done">
 The name "%&gt;environment&lt;" coming into the module for xplus.R.
 This is the deparse(origCall)
+</item>
+
+<item status="done">
+tests2/if5.R fails.
 </item>
 
 </items>
