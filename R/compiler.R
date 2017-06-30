@@ -36,6 +36,8 @@ function(.compilerHandlers = getCompilerHandlers(),
     compiler$.assertFunctions = .assert
     compiler$.addSymbolMetaData = .addSymbolMetaData
 
+    compiler$.phiForwardRefs = list()
+    
     compiler$.SetCallFuns = list()
     compiler$.loopStack = character()
 
