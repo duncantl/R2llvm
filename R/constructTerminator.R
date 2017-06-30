@@ -10,7 +10,7 @@ constructBranch.RetTerminator =
 function(term, cmp, helper, blocks)
 {
   var = cmp$getAlloc(term$value$name) 
-  helper$createRet(helper$createLoad(var))
+  helper$createRet( helper$createLoad(var) )
 }
 
 constructBranch.CondBrTerminator =
