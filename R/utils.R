@@ -174,10 +174,12 @@ function(env, ir, toType, fromType, val, ...)
   
   fromTypes <- c(DoubleType = DoubleType,
                  Int32Type = Int32Type,
-                 DoubleType = DoublePtrType)
+                 DoubleType = DoublePtrType,
+                 Int32Type = Int32PtrType)
   
   casters <- c(createFPToSI,
                createSIToFP,
+               function(ir, val, ...) createLoad(ir, val),
                function(ir, val, ...) createLoad(ir, val))
 
   i <- which(sapply(fromTypes, function(x) sameType(fromType, x)))
