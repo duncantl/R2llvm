@@ -196,7 +196,8 @@ function(x, targetType, isIntType, toCast, env, ir, ...)
         var = getVariable(x, env, ir)
 
             # don't load if this is an Argument, but do load if it is a local variable.
-        if(!is(var, "Argument"))
+#browser()        
+        if(is(var, "AllocaInst")) #XXX????  Was !is(, "Argument")
            var = ir$createLoad(var)
         
         if (!sameType(targetType, Rllvm::getType(var)))   # !is.null(toCast) && identical(x, toCast)
