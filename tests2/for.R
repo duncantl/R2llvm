@@ -9,10 +9,11 @@ function(n)
       total = total + i
   return(total)
 }
-cfg = rstatic::to_cfg(f)
+ast = rstatic::to_ast(f)
+cfg = rstatic::to_cfg(ast)
 types = infer_types(cfg)
 # , init = list(n = typesys::IntegerType()))
 
-m = compile_cfg(f)
+#m = compilefFunction(f)
 
 

@@ -1,5 +1,5 @@
 library(R2llvm)
-f = function() numeric(10)
+f = function() numeric(10L)
 fc = compileFunction(f)
 #llvmAddSymbol("Rf_allocVector")
 

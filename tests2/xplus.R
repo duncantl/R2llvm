@@ -13,7 +13,7 @@ fc = compileFunction(f, cfg = cfg, types = types, optimize = FALSE)
 showModule(fc)
 stopifnot(identical(.llvm(fc, 10), 11L))
 
-# NOw real type as input and add  numeric 1 so no casting necessary
+# Now real type as input and add  numeric 1 so no casting necessary
 f = function(x) 1 + x
 cfg = rstatic::to_cfg(f, ssa = FALSE)
 types = RTypeInference::infer_types(cfg, init = list(x = typesys::RealType()))

@@ -1,4 +1,12 @@
 # BROKEN
+assign.R
+
+
+while.R
+rw2d.R
+for.R
+runif.R
+dexp.R
 
 
 # ISSUES
@@ -6,10 +14,10 @@ numeric.R
 numeric1.R
 
 # NOT EXPECTED TO WORK
-addI.R
 
 # WORKING
 subset.R
+const.R
 assignSubset.R
 one.R
 onePlus.R
@@ -18,3 +26,9 @@ list.R
 cast.R
 xplus.R
 sexp.R
+if2.R
+if3.R
+if4.R
+if5.R
+oneAssign.R
+addI.R

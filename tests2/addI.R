@@ -17,16 +17,19 @@ cfg = to_cfg(foo)
 types = infer_types(cfg)
 
 library(R2llvm)
-m = compile_cfg( , "foo", cfg, types)
+f = compileFunction(foo, cfg, types)
+mod = as(f, "Module")
 
-Rllvm::.llvm(m$foo, 1L)
-Rllvm::.llvm(m$foo, 10L)
+Rllvm::.llvm(f, 1L)
+Rllvm::.llvm(f, 10L)
 
-m = compile_cfg(minus, mod = m)
+m = compileFunction(minus, module = mod)
 
-names(m)
-ans = Rllvm::.llvm(m$minus, 10L)
-stopifnot(ans == 8)
+names(mod)
+showModule(mod)
+
+ans = Rllvm::.llvm(m, 10L)
+stopifnot(identical(ans, 8L))
 
 
 

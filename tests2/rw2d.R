@@ -21,5 +21,6 @@ rw2d = function(n = 100L) {
   list(x = xpos, y = ypos)
 }
 
-tt = RTypeInference::infer_types(rstatic::to_cfg(rw2d, ssa = FALSE))
+cfg = rstatic::to_cfg(rw2d) # infer_types() doesn't work if use ssa = FALSE)
+tt = RTypeInference::infer_types(cfg)
 

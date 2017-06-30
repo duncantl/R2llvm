@@ -9,10 +9,12 @@ library(RTypeInference)
 f =
 function()
 {
-   x = numeric(1L)  # try with 1 and make it work, i.e. do the casting..
+   x = numeric(2)  # try with 1 and make it work, i.e. do the casting..
    list(x)
 #   list(integer(1), logical(2))
 }
 
-compileFunction(f)
+fc = compileFunction(f)
+ans = .llvm(fc)
+
 
