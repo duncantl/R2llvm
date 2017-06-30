@@ -4,6 +4,7 @@ setOldClass("Call")
 setOldClass(c("Integer", "Literal"))
 setOldClass(c("Numeric", "Literal"))
 setOldClass("ASTNode")
+setOldClass("Character")
 setOldClass("Assign")
 
 setGeneric("asRCall", function(x, ...) {
