@@ -104,6 +104,7 @@ S3method(construct_ir, "BrTerminator")
 S3method(construct_ir, "Replacement")
 S3method(construct_ir, "Replacement")
 S3method(construct_ir, "Phi")
+S3method(construct_ir, "Symbol")
 
 
 exportMethods("coerce")
