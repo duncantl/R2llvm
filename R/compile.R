@@ -551,7 +551,8 @@ function(fun,
          .addSymbolMetaData = TRUE,
          .readOnly = constInputs(fun),
          .integerLiterals = TRUE,
-         .loadExternalRoutines = TRUE
+         .loadExternalRoutines = TRUE,
+         .rewriteFor = TRUE
          )  # .duplicateParams = TRUE
 {
    if(missing(name))
@@ -567,7 +568,7 @@ function(fun,
    if(is.logical(.execEngine) && .execEngine)
       .execEngine = ExecutionEngine(module)
       
-   if(.fixIfAssign)
+   if(!missing(fun) && .fixIfAssign)
      fun = fixIfAssign(fun)
   
   ftype <- typeof(fun)
@@ -630,6 +631,12 @@ if(FALSE) {
    types = lapply(types, translate_type)
    if(is(returnType, "typesys::list|Type"))
        returnType = translate_type(returnType)
+
+   if(.rewriteFor) {
+       ast = to_ast(fun)
+       astTraverse(ast, rewriteFor)
+       cfg = to_cfg(ast)
+   }
 
        # Create the LLVM Function.
 

@@ -3,22 +3,13 @@ library(R2llvm)
 f =
 function(n)
 {
-  total = 0
+  total = 0L
   for(i in 1L:n)
       total = total + i
   total  
 }
 
-cfg = rstatic::to_cfg(f)
-types = infer_types(cfg)
-
-ast = rstatic::to_ast(f)
-rstatic::astTraverse(ast, rstatic::rewriteFor)
-cfg = rstatic::to_cfg(ast)
-
-# , init = list(n = typesys::IntegerType()))
-
-fc = compileFunction(f, cfg = cfg, types = types, name = "f", optimize = TRUE)
+fc = compileFunction(f)
 
 if(FALSE) {
 N = 1e8
