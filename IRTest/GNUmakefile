@@ -9,3 +9,6 @@ OPT=0
 
 %.cpp: %.ll
 	$(LLC) -march=cpp $< -o $@
+
+%_opt.ll: %.ll
+	  opt -mem2reg -S $< -o $@

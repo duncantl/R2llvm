@@ -1,8 +1,5 @@
 # BROKEN
-assign.R
 
-
-while.R
 rw2d.R
 for.R
 runif.R
@@ -10,6 +7,8 @@ dexp.R
 
 
 # ISSUES
+while.R
+assign.R
 numeric.R
 numeric1.R
 

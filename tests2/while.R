@@ -9,6 +9,7 @@ function()
 }
 
 library(R2llvm)
-fc = compileFunction(f)
+fc = compileFunction(f, optimize = TRUE)
+showModule(fc)
 
 
