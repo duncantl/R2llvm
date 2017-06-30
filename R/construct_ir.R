@@ -1,5 +1,8 @@
-construct_ir = function(node, cmp, helper,  types, .targetType = NULL) 
+construct_ir =
+function(node, cmp, helper,  types, .targetType = NULL)
+{
   UseMethod("construct_ir")
+}
 
 
 construct_ir.BranchInst =
@@ -20,10 +23,12 @@ function(node, cmp, helper,  types, .targetType = NULL) {
 construct_ir.Assign =
 function(node, cmp, helper,  types, .targetType = NULL)
 {
+
     # For dealing with assignments that are actually for Phi nodes.
 if(node$write$name %in% names(cmp$.phiVarInstructions)) {
+    .targetType = cmp$.types[[node$write$name]]
     i = compile(node$read, cmp, helper, .targetType = .targetType)
-    cmp$.phiVarInstructions[node$write$name] = i
+    cmp$.phiVarInstructions[[node$write$name]] = i
     return(i)
 }
 
