@@ -16,5 +16,6 @@ function()
 
 fc = compileFunction(f) # , .rewriteAST = FALSE)
 ans = .llvm(fc)
+stopifnot(is.list(ans) && length(ans) == 1L)
 
 
