@@ -75,7 +75,6 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
    stringLiteral = FALSE
    type = NULL
 
-browser()   
 
 #XXX may not need to do this but maybe can compile the RHS as usual.
    if(isSubsettingAssignment(call) && is(ty <- getElementAssignmentContainerType(args[[1]], env), "STRSXPType")) 
@@ -202,7 +201,7 @@ browser()
    if(!is.null(val)) {
 
       if(all(sapply(call[-1], is.name))) {
-browser()
+
 # Temporary hack for dealing with ._return_1 = .return_1 in rw2d.R
           tmp = env$.types[ as.character(call[-1]) ]
           if(!sameType(tmp[[1]], tmp[[2]]))
@@ -617,7 +616,7 @@ function(fun,
     if(length(args)  > length(types)) 
        stop("need to specify the types for all of the arguments for the ", name, " function")
 
-browser()     
+
    types = lapply(types, translate_type)
    if(is(returnType, "typesys::list|Type"))
        returnType = translate_type(returnType)
