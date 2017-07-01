@@ -3,7 +3,7 @@ f = function(x)
        x[1L]
 
 library(RTypeInference)
-cfg = rstatic::to_cfg(f, ssa = FALSE)
+cfg = rstatic::to_cfg(f)
 #debug(RTypeInference:::solve.ConstraintSet)
 types = RTypeInference::infer_types(cfg, init = list(x = ArrayType(RealType()))) # REALSXPType))
 fc = compileFunction(f, cfg = cfg, types = types, .readOnly = "x", optimize = FALSE)

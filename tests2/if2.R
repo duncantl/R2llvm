@@ -10,7 +10,7 @@ function(x)
 }
 
 library(RTypeInference)
-cfg = rstatic::to_cfg(f)#, ssa = FALSE)
+cfg = rstatic::to_cfg(f)
 types = RTypeInference::infer_types(cfg, init = list(x = typesys::IntegerType()))
 fc = compileFunction(f, cfg = cfg, types = types)
 stopifnot(identical(.llvm(fc, 100), 20L))
