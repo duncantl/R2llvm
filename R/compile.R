@@ -58,14 +58,14 @@ assignHandler = `compile.=` =   # `compile.<-`
   #
   # XXX   This is now getting too long. Break it up and streamline.
   #
-function(call, env, ir, ..., .useHandler = TRUE)
+function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
 {
 
 #   if(.useHandler && !is.na(i <- match(as.character(call[[1]]), names(env$.compilerHandlers)))) 
 #       return(env$.compilerHandlers[[i]](call, env, ir, ...))
     
-if(is(call, "Replacement"))
-    call = asRCall(call)
+   if(is(call, "Replacement"))
+      call = asRCall(call)
 
    if(is(call, "Call"))
       args = call$args
@@ -75,10 +75,11 @@ if(is(call, "Replacement"))
    stringLiteral = FALSE
    type = NULL
 
+browser()   
 
 #XXX may not need to do this but maybe can compile the RHS as usual.
    if(isSubsettingAssignment(call) && is(ty <- getElementAssignmentContainerType(args[[1]], env), "STRSXPType")) 
-     return(assignToSEXPElement(args[[1]], args[[2]], env, ir, type = ty))
+      return(assignToSEXPElement(args[[1]], args[[2]], env, ir, type = ty))
 
 #!!!!!XXX The Replacement object is different from the way R represents the assignment
 # In R,   x[1L] = 10 is represented as  =(x[1L], 10) - so a call with 2 arguments.
@@ -132,6 +133,8 @@ if(is(call, "Replacement"))
    if(is.name(args[[1]])) {
          var = as.character(args[[1]])
 
+#XXXX Temp to check something
+         
       # We don't search parameters for the var name, since we don't
       # want to try to assign over a parameter name.
       #XXX  I think we do want to mimic that behaviour but understand which local variable that corresponds to.
@@ -142,6 +145,9 @@ if(is(call, "Replacement"))
           if(is.null(type)) 
             type = env$.localVarTypes[[var]]
 
+          if(is.null(type))
+             type = env$.types[[var]]
+          
           if(is.null(type)) 
              type = getDataType(var, env)
 
@@ -195,7 +201,16 @@ if(is(call, "Replacement"))
 
    if(!is.null(val)) {
 
-      if(!sameType(getType(val), getElementType(getType(ref)))) {
+      if(all(sapply(call[-1], is.name))) {
+browser()
+# Temporary hack for dealing with ._return_1 = .return_1 in rw2d.R
+          tmp = env$.types[ as.character(call[-1]) ]
+          if(!sameType(tmp[[1]], tmp[[2]]))
+             val = createCast(env, ir, getElementType(type[[1]]), tmp[[2]], val)
+          else if(is(val, "AllocaInst"))
+              
+             val = ir$createLoad(val)
+      } else if(!sameType(getType(val), getElementType(getType(ref)))) {
 #XXX
 #cat("fix this cast\n")
 #         val = Rllvm::createCast(ir, "SIToFP", val, getElementType(getType(ref)))
@@ -389,16 +404,16 @@ function(exprs, env, ir, fun = env$.fun, name = getName(fun), .targetType = NULL
 compile.name <-
 function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL)  
 {
-   getVariable(e, env, ir, searchR = TRUE, ...)
+   getVariable(e, env, ir, searchR = TRUE, load = TRUE, ...)
 }
 
 compile.integer <-
 function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL)  
 {
    if(length(e) == 1)
-      createIntegerConstant(e)
+      createIntegerConstant(e, type = .targetType)
    else
-     stop("not compiling integer vector for now")
+     stop("not compiling integer vector (multiple values) for now")
 }
 
 compile.logical <-
@@ -412,7 +427,6 @@ function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NUL
 compile.numeric <-
 function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL)  
 {
-
   if(length(e) == 1) {
      if(length(.targetType))
        createConstant(val = e, type = .targetType)    
@@ -532,7 +546,8 @@ function(fun,
          .functionInfo = list(...),
          .routineInfo = list(),
          .compilerHandlers = getCompilerHandlers(),
-         .globals = getGlobals(fun, names(.CallableRFunctions),
+         .globals = getGlobals(if(isClosure) fun else to_r(fun),
+                               names(.CallableRFunctions),
                                .ignoreDefaultArgs, .assert = .assert, .debug = .debug), #  would like to avoid processing default arguments.
                                  # findGlobals(fun, merge = FALSE, .ignoreDefaultArgs), 
          .insertReturn = !identical(returnType, VoidType),
@@ -549,14 +564,15 @@ function(fun,
          .RGlobalVariables = character(),
          .debug = TRUE, .assert = TRUE,
          .addSymbolMetaData = TRUE,
-         .readOnly = constInputs(fun),
+         .readOnly = constInputs(if(is(fun, "ASTNode")) eval(to_r(fun)) else fun),
          .integerLiterals = TRUE,
          .loadExternalRoutines = TRUE,
-         .rewriteFor = TRUE
+         .rewriteAST = TRUE
          )  # .duplicateParams = TRUE
 {
-   if(missing(name))
+   if(missing(name)) {
       name = deparse(substitute(fun))
+   }
 
    if(is.logical(.assert))
       .assert = if(.assert) ".assert" else character()
@@ -571,10 +587,10 @@ function(fun,
    if(!missing(fun) && .fixIfAssign)
      fun = fixIfAssign(fun)
   
-  ftype <- typeof(fun)
-  if (ftype == "closure") {
+  isClosure <- typeof(fun) == "closure"
+  if (isClosure || is(fun, "Function")) {
 
-     if(missing(cfg) && .insertReturn)
+     if(missing(cfg) && .insertReturn && isClosure)
        fun = insertReturn(fun) # do we need env??
                                #  Doing this here because we need to insert the returns before the CFG and types.
 
@@ -586,25 +602,27 @@ function(fun,
        if(missing(returnType))
           returnType = .typeInfo$returnType
      }
-     
-    args <- formals(fun) # for checking against types; TODO
-    if(length(args)) {
-      names(formals(fun)) = names(args) = paste0(names(args), "")#"_1"
-    }
 
+     # for checking against types; TODO
+    args <- if(isClosure) formals(fun) else fun$params
+
+     
     if(length(types) == 0 && length(args) > 0) {
         types = getTypeInfo(fun)
         returnType = types[[1]]
         types =  types[[2]]
     }
 
-    
+
     if(length(args)  > length(types)) 
        stop("need to specify the types for all of the arguments for the ", name, " function")
 
+browser()     
+   types = lapply(types, translate_type)
+   if(is(returnType, "typesys::list|Type"))
+       returnType = translate_type(returnType)
 
-
-#XX Revisit when the switch to the new types is working      
+#XX Revisit when the switch to the new types is working
 if(FALSE) {
       # See if we have some SEXP types for which we may need to know the length.
       # This might go as we can call Rf_length().  nrow()
@@ -628,11 +646,7 @@ if(FALSE) {
 
 
 
-   types = lapply(types, translate_type)
-   if(is(returnType, "typesys::list|Type"))
-       returnType = translate_type(returnType)
-
-   if(.rewriteFor) {
+   if(isClosure && .rewriteAST) {
        ast = to_ast(fun)
        astTraverse(ast, rewriteFor)
        cfg = to_cfg(ast)
@@ -644,7 +658,7 @@ if(FALSE) {
      #??? Probably best to convert all the types to Rllvm types now and also to change
      # the names of the parameters to SSA form now. Could change the type and CFG to use the parameter names for
      # first reference to parameter rather than appending _1
-    argTypes <- getFunParamTypes(types, names(formals(fun)))
+    argTypes <- getFunParamTypes(types, names(args))
     llvm.fun <- Function(name, returnType, argTypes, module)
 
 
@@ -747,7 +761,8 @@ if(FALSE) {
 
 
 
-   fbody <- body(fun)
+   if(isClosure)  fbody <- body(fun)
+     
 if(FALSE) {
     # Will insertReturn fix this?
    last = fbody[[length(fbody)]]
@@ -996,20 +1011,17 @@ function(..., env = NULL, useFloat = FALSE)
 
 
  ans =  list(
+
+       Rf_runif = list(DoubleType, DoubleType, DoubleType),
+     
        length = list(Int32Type, getSEXPType("REAL")),
        Rf_length = list(Int32Type, getSEXPType("REAL")),        # same as length. Should rewrite name length to Rf_length.
        INTEGER = list(Int32PtrType, getSEXPType("INT")),
-#    R_INTEGER = list(Int32PtrType, getSEXPType("INT")),     # !! proxy
        REAL = list(DoublePtrType, getSEXPType("REAL")),
-#    R_REAL = list(DoublePtrType, getSEXPType("REAL")),      # !! proxy
-       Rf_allocVector = list(SEXPType, Int32Type, Int32Type),
-#    R_allocVector = list(SEXPType, Int32Type, Int32Type),   # !! proxy
+       Rf_allocVector = list(SEXPType, Int32Type, Int32Type), #XXXX  64 or 32 type depends on platform.
        Rf_protect = list(VoidType, SEXPType),
-#    R_protect = list(VoidType, SEXPType),     
        Rf_unprotect = list(VoidType, Int32Type),
-#    R_unprotect = list(VoidType, Int32Type),     
        Rf_unprotect_ptr = list(VoidType, SEXPType),
-#    R_unprotect_ptr = list(VoidType, SEXPType),          
        R_PreserveObject = list(VoidType, SEXPType),
        R_ReleaseObject = list(VoidType, SEXPType),     
        Rf_mkChar = list(getSEXPType("CHAR"), StringType),
@@ -1089,7 +1101,8 @@ ExcludeCompileFuncs = c("{", "sqrt", "return", MathOps,
                         ".R", ".typeInfo", ".signature", ".varDecl", ".pragma",
                         ".assert", ".debug",
                         "stop", "warning",
-                        "logical", "integer", "numeric", "list"
+                        "logical", "integer", "numeric", "list",
+                        "mkList"
                        )  # for now
 
 

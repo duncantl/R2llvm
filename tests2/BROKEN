@@ -1,5 +1,11 @@
 # BROKEN
 
+# Recent work breaks this - Sat afternoon working on the rewrite and ..
+assignSubset.R - getElementType in  assign x_1[1L] = 10.4
+list.R - bad sig in call.
+subset.R - wrong type
+
+
 rw2d.R
 runif.R
 dexp.R
@@ -14,18 +20,15 @@ numeric1.R
 # NOT EXPECTED TO WORK
 
 # WORKING
+logicOps.R
 while.R
 while2.R
 assign.R
 for.R
 for2.R
-subset.R
 const.R
-assignSubset.R
 one.R
 onePlus.R
-logicOps.R
-list.R
 cast.R
 xplus.R
 sexp.R
