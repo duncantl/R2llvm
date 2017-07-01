@@ -1,10 +1,8 @@
 # BROKEN
 
 # Recent work breaks this - Sat afternoon working on the rewrite and ..
-subset.R - wrong type
 
 assignSubset.R - getElementType in  assign x_1[1L] = 10.4
-list.R - bad sig in call.
 
 rw2d.R
 runif.R
@@ -20,6 +18,8 @@ numeric1.R
 # NOT EXPECTED TO WORK
 
 # WORKING
+list.R - with the rewrite to mkList.
+subset.R 
 logicOps.R
 while.R
 while2.R

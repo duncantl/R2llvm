@@ -14,7 +14,7 @@ function()
 #   list(integer(1), logical(2))
 }
 
-fc = compileFunction(f)
+fc = compileFunction(f) # , .rewriteAST = FALSE)
 ans = .llvm(fc)
 
 

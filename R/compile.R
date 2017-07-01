@@ -566,7 +566,7 @@ function(fun,
          .readOnly = constInputs(if(is(fun, "ASTNode")) eval(to_r(fun)) else fun),
          .integerLiterals = TRUE,
          .loadExternalRoutines = TRUE,
-         .rewriteAST = TRUE
+         .rewriteAST = missing(cfg)
          )  # .duplicateParams = TRUE
 {
    if(missing(name)) {
@@ -645,9 +645,10 @@ if(FALSE) {
 
 
 
-   if(isClosure && .rewriteAST) {
+   if(isClosure && .rewriteAST && missing(cfg)) {
+       # What if person specified the cfg?
        ast = to_ast(fun)
-       astTraverse(ast, rewriteFor)
+       rewriteAST(ast)
        cfg = to_cfg(ast)
    }
 
