@@ -11,5 +11,6 @@ function()
 library(R2llvm)
 fc = compileFunction(f, optimize = TRUE)
 showModule(fc)
+stopifnot(identical(.llvm(fc), 10L))
 
 
