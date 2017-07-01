@@ -55,3 +55,11 @@ translate_type.default = function(type, ...) {
 `translate_type.typesys::StringType` = function(type, ...) {
   return (Rllvm::STRSXPType)
 }
+
+`translate_type.typesys::SEXPType` = function(type, ...) {
+  return (Rllvm::SEXPType)
+}
+
+`translate_type.typesys::LISTSEXPType` = function(type, ...) {
+  return (Rllvm::VECSXPType)
+}

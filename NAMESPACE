@@ -93,6 +93,8 @@ S3method(translate_type, "typesys::ListType")
 S3method(translate_type, "typesys::BooleanType")
 S3method(translate_type, "typesys::ArrayType")
 S3method(translate_type, "typesys::StringType")
+S3method(translate_type, "typesys::SEXPType")
+S3method(translate_type, "typesys::LISTSEXPType")
 
 export(construct_ir)
 S3method(construct_ir, "Assign")
