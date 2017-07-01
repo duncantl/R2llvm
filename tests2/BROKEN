@@ -4,16 +4,19 @@ rw2d.R
 runif.R
 dexp.R
 
+switch.R
+
 
 # ISSUES
-while.R
-assign.R
 numeric.R
 numeric1.R
 
 # NOT EXPECTED TO WORK
 
 # WORKING
+while.R
+while2.R
+assign.R
 for.R
 for2.R
 subset.R
