@@ -14,7 +14,7 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
        astCall = FALSE
    }
 
-cat("compile.call for",funName, "\n")   
+#cat("compile.call for", funName, "\n")   
 #browser()
 
    if(.useHandlers && funName %in% names(env$.compilerHandlers))
