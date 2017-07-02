@@ -88,6 +88,10 @@ evaluation, then we get a different semantic.
 The return value from tests2/numeric.R is corrupted.
 Could it be issues with PROTECT() calls?  or Rffi? int32 type(s) for arguments rather than int64. Tried this.
 tests2/numeric.R and tests2/numeric1.R return odd numeric vectors.
+<br/>
+Are we protecting a SEXP type that is returned?
+<br/>
+See tests2/integerLiteral.R for the same effect with a simple integer call.
 </item>
 
 <item>
