@@ -43,12 +43,17 @@ function(call, compiledValue, env, ir, type = getElementAssignmentContainerType(
 }   
 
 createSEXPGEP =
+    #   call  e.g.  x[1L]
+    #   env - compiler state
+    #   ir  - IRBuilder
+    #
+    #  type of the SEXP ?
 function(call, env, ir, ..., type = NULL)
 {    
      # check if is name and not call/expressions such as foo()
    if(!is.name(call[[2]]))
        stop("code doesn't handle this yet")
-   
+
    varName = as.character(call[[2]])
 
       # if we have a dimensioned object, then, for now, we find how to access
@@ -70,6 +75,8 @@ function(call, env, ir, ..., type = NULL)
      # so that ptr is the collection of elements.
 
    var = getVariable(varName, env, ir)
+   if(is(var, "AllocaInst"))
+       var = ir$createLoad(var)
    ptr = ir$createCall(fn, var)
 
      # Now compute the index of the element - not elements.
