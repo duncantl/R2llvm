@@ -17,7 +17,7 @@ b = .llvm(fc, 0.1, 3.6, 1e6L)
 stopifnot(identical(a,b))
 
 
-if(FALSE) {
+if(TRUE) {
 library(microbenchmark)
 N = 1e6
 mb = microbenchmark(.llvm(fc, 0.1, 3.6, N), logistic_map(0.1, 3.6, N), times = 20)
@@ -29,4 +29,11 @@ tm2 = system.time(a2 <- .llvm(fc, 0.1, 3.6, N, .ee = ee))
 mb.ee = microbenchmark(.llvm(fc, 0.1, 3.6, N, .ee = ee), logistic_map(0.1, 3.6, N), times = 20)
 print(with(mb.ee, do.call(`/`, rev(tapply(time, expr, summary)))))
 }
+
+# For N=1e6
+# The RLLVMCompile approach gets a speed-up over the R interpreter
+# of 49-56 without the execution engine and
+# of 260-264 with the execution engine.
+# The R2llvm version gives about 59 and 264.
+# This compares to about 16 speed up for the very early version of NIMBLE's rcjit.
 

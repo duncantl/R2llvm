@@ -41,7 +41,7 @@ library(microbenchmark)
 mb = microbenchmark(.llvm(z, 0.1, 3.6, N), logistic_map(0.1, 3.6, N), times = 20)
 print(with(mb, do.call(`/`, rev(tapply(time, expr, summary)))))
 
-# A factor of 49 speedup.
+# A factor of 49 - 56 speedup.
 
 ee = ExecutionEngine(z)
 # Warm this up with an initial call.
@@ -49,7 +49,7 @@ tm2 = system.time(a2 <- .llvm(z, 0.1, 3.6, N, .ee = ee))
 mb.ee = microbenchmark(.llvm(z, 0.1, 3.6, N, .ee = ee), logistic_map(0.1, 3.6, N), times = 20)
 print(with(mb.ee, do.call(`/`, rev(tapply(time, expr, summary)))))
 
-# Basically seeing about a factor of 230 speedup 
+# Basically seeing about a factor of 230 - 260 speedup 
 
 
 
