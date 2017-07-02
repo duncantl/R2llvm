@@ -79,7 +79,10 @@ See subset.R
 [Originally we were returning an int1.]
 </item>
 
-<item>
+<item status="done">
+Added to rewriteAST().
+<br/>
+See tests2/assignInCall.R
 Handle assignments in expressions, e.g
 <![CDATA[
  foo(x <- 1:10)

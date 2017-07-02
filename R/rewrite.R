@@ -17,8 +17,12 @@
 rewriteAST =
 function(ast, ..., functionRewrites = getFunctionRewrites())
 {
+  if(!is(ast, "ASTNode"))
+     ast = to_ast(ast)
+    
   astTraverse(ast, makeIntegerLiterals)
   astTraverse(ast, rewriteListCreate)
+  astTraverse(ast, rewriteInCallAssigns)    
   astTraverse(ast, rewriteFor)
   lapply(functionRewrites, function(f) astTraverse(ast, f))
   astTraverse(ast, rewriteProtect)
@@ -33,6 +37,8 @@ function(ast, ..., functionRewrites = getFunctionRewrites())
       u$args[[1]]$value = numProtects
       insertNode(ast$body, e[[ length(e) ]], u, before = TRUE)
   }
+
+  ast
 }
 
 
@@ -217,6 +223,24 @@ function(node, error = TRUE, ...)
 }
 
 
+rewriteInCallAssigns =
+  #
+  # This replaces assignments in calls of the form
+  #  foo( x <- 1:10)
+  #  foo( x <- 1:10, 2, 4 )
+function(node, ...)
+{
+  if(is(node, "Assign") && is(node$parent, "Call")) {
+     if(is(node$parent$parent, "Return")) {
+        warning("assigning a value to ", node$write$basename, " has no effect in a return statement")
+        w = sapply(node$parent$args, identical, node)
+        node$parent$args[[ which(w) ]] = node$read
+     } else {
+        insertNode(node$parent$parent, node$parent, node)
+        replaceNode(node$parent, node, node$write, field = "args")
+    }
+  }
+}
 
 
 if(FALSE) {
@@ -233,4 +257,5 @@ z = astTraverse(ast, function(x) print(class(x)))
 z = astTraverse(ast, rewriteFor)
 ast
 }
+
 
