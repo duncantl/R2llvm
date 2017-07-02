@@ -2,7 +2,7 @@
 
 # Recent work breaks this - Sat afternoon working on the rewrite and ..
 
-assignSubset.R - getElementType in  assign x_1[1L] = 10.4
+assignSubset.R - works with ssa = FALSE. But need to work with ssa = TRUE. Issue with connecting parameters to ssa.
 
 rw2d.R
 runif.R
@@ -18,6 +18,7 @@ numeric1.R
 # NOT EXPECTED TO WORK
 
 # WORKING
+nimble_rcjit.R
 list.R - with the rewrite to mkList.
 subset.R 
 logicOps.R
