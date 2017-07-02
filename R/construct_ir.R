@@ -34,7 +34,9 @@ if(node$write$name %in% names(cmp$.phiVarInstructions)) {
 
    call = asRCall(node)
    return(`compile.=`(call, cmp, helper, .targetType = .targetType))
-    
+
+
+######    
   # Allocate memory for RHS.
   type = types[[node$write$name]]
 
@@ -55,6 +57,7 @@ if(node$write$name != "._return_") {
   helper$createStore(rhs, lhs)
 
   lhs
+#########
 }
 
 construct_ir.Call =
@@ -123,7 +126,6 @@ function(node, cmp, helper,  types, .targetType = NULL)
 construct_ir.Symbol =
 function(node, cmp, helper,  types, .targetType = NULL)
 {
-browser()    
   v = cmp$getAlloc(node$name)
   if(is.null(v)) {
      v = cmp$.params[[ node$name ]]
@@ -165,7 +167,14 @@ function(node, cmp, helper,  types, .targetType = NULL)
 construct_ir.Replacement =
 function(node, cmp, helper,  types, .targetType = NULL)
 {
- return(`compile.=`(node, cmp, helper))
+
+    e = to_r(node)
+    var = node$write$basename
+    var = if(!( node$write$basename %in% names(cmp$.params)) )
+              var = paste0(var, "_1")
+    e[[2]][[2]] = as.name(var)
+    
+    return(`compile.=`(e, cmp, helper))
 
  
 # idx = match(node$fn$name, names(cmp$.compilerHandlers))
