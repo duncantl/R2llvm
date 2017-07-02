@@ -110,3 +110,6 @@ S3method(construct_ir, "Symbol")
 
 
 exportMethods("coerce")
+
+export(rewriteAST)
+export(rewriteFor)
