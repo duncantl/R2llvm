@@ -5,9 +5,12 @@ f = function(x) {
    }
 
 library(RTypeInference)
-cfg = rstatic::to_cfg(f, ssa = FALSE)
+#XXXXX NEED TO DO THIS WITH ssa = TRUE
+cfg = rstatic::to_cfg(f, ssa = FALSE) 
 types = RTypeInference::infer_types(cfg, init = list(x = ArrayType(RealType()))) # REALSXPType))
-fc = compileFunction(f, cfg = cfg, types = types, .readOnly = "x")
+#fc = compileFunction(f, cfg = cfg, types = types, .readOnly = "x")
+fc = compileFunction(f, cfg, types = types)
 
 stopifnot(identical(.llvm(fc, c(101, 20)[1]), 10.4))
+
 
