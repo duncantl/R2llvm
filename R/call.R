@@ -13,7 +13,8 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
        args = as.list(call[-1])
        astCall = FALSE
    }
-       
+
+cat("compile.call for",funName, "\n")   
 #browser()
 
    if(.useHandlers && funName %in% names(env$.compilerHandlers))
@@ -113,19 +114,29 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
    
    funName = mapRoutineName(funName)
 
-   if(funName == "list") {
+   if(funName == "mkList") {
+      e = substitute(Rf_allocVector(type, len), list(type = VECSXP, #getSEXPTypeNumByConstructorName(funName),
+                                                     len = args[[1]]))
+      obj = compile.call(e, env, ir, ...)
+      return(obj)
+   } else  if(funName == "list") {
       # Need to allocate the list, protect it and then evaluate the elements and insert them.
       #
       e = substitute(Rf_allocVector(type, len), list(type = getSEXPTypeNumByConstructorName(funName), len = length(args)))
       obj = compile.call(e, env, ir, ...)
-      e = substitute(Rf_protect(obj), list(obj = obj))
-      protect = compile.call(e, env, ir, ...)
+#XXX Need to assign this to a variable before we can use it in the next few calls.
+      
+      # A rewrite of the AST will put the calls to protect and unprotect.
+#TURN OFF IF .rewriteAST  is TRUE
+#  e = substitute(Rf_protect(obj), list(obj = obj))
+#  protect = compile.call(e, env, ir, ...)
       for(i in seq(along = args)) {
           e = substitute(SET_VECTOR_ELT(obj, pos, val), list(obj = obj, pos = i-1L, val = args[[i]]))
           compile.call(e, env, ir, ...)
       }
-      e = substitute(Rf_unprotect_ptr(obj), list(obj = obj))
-      protect = compile.call(e, env, ir, ...)
+#TURN OFF IF .rewriteAST  is TRUE      
+#  e = substitute(Rf_unprotect_ptr(obj), list(obj = obj))
+#  compile.call(e, env, ir, ...)
       return(obj)
    }
 
@@ -174,12 +185,16 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
           stop(err)
        }
    }
-#browser()   
+#browser()
+#if(funName == "REAL") browser()   
    args = mapply(function(e, ty)
                    compile(e, env, ir, ..., .targetType = ty),  # ... and fun, name,
                  args, targetTypes)
    
    env$addCallInfo(funName)
+
+   w = sapply(args, is, "AllocaInst")
+   args[w] = lapply(args[w], function(x) ir$createLoad(x))
   
    call = ir$createCall(ofun, .args = args)
    if(isTailFunction(env$.Rfun, env$.hints))
