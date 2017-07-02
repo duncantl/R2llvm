@@ -9,7 +9,8 @@ function(obj, env, elementType = FALSE, .useFloat = env$.useFloat)
      else if(is(obj, "Symbol")) {
          return(env$.types[[obj$name]])
      } else
-         stop("don't yet know how to getTypes() for ASTNode")
+         obj = to_r(obj)
+#         stop("don't yet know how to getTypes() for ASTNode")
    }
        
    if(is(obj, "integer"))
