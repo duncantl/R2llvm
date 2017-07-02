@@ -585,9 +585,23 @@ function(fun,
       
    if(!missing(fun) && .fixIfAssign)
      fun = fixIfAssign(fun)
-  
+
   isClosure <- typeof(fun) == "closure"
+
+   
   if (isClosure || is(fun, "Function")) {
+
+   if(.rewriteAST && missing(cfg)) {
+       # What if person specified the cfg?
+       if(is(fun, "ASTNode"))
+           ast = fun
+       else
+           ast = to_ast(fun)
+       rewriteAST(ast)
+       cfg = to_cfg(ast)
+   }
+   
+      
 
      if(missing(cfg) && .insertReturn && isClosure)
        fun = insertReturn(fun) # do we need env??
@@ -612,7 +626,7 @@ function(fun,
         types =  types[[2]]
     }
 
-
+    
     if(length(args)  > length(types)) 
        stop("need to specify the types for all of the arguments for the ", name, " function")
 
@@ -644,13 +658,6 @@ if(FALSE) {
        dimTypes = list()
 
 
-
-   if(isClosure && .rewriteAST && missing(cfg)) {
-       # What if person specified the cfg?
-       ast = to_ast(fun)
-       rewriteAST(ast)
-       cfg = to_cfg(ast)
-   }
 
        # Create the LLVM Function.
 
@@ -794,6 +801,10 @@ if(FALSE) {
 
      # Fix the phiForwardRefs.  May need to find the nodes
      # in additional places. Make separate function.
+   w = ( names(nenv$.phiForwardRefs) %in% names(params))
+   if(any(w)) 
+       nenv$.phiVarInstructions[ names(nenv$.phiForwardRefs)[w] ] = params[names(nenv$.phiForwardRefs)[w]]
+
    actualNodes = nenv$.phiVarInstructions[names(nenv$.phiForwardRefs)]
    if(any(sapply(actualNodes, is.null)))
        stop("Problem with phi node forward references")
