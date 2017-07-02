@@ -41,6 +41,10 @@ Add the code to compileFunction() to rewrite the for loops
 but to get the types from the original.
 </item>
 
+<item status="done">
+rewrite nested loops
+</item>
+
 <item>
 Add more support in createCast (specifically the fromTypes, casters) to handle
 other types. See subset.R and subset2.R
