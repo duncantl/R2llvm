@@ -1,3 +1,18 @@
+#
+# Several of these may belong in rstatic. Need to figure out what the scope of each package is. And also the overlap with CodeAnalysis.
+
+#
+# To test
+# library(rstatic); source("~/NickUThesis/rstatic/R/ASTTraverse.R"); source("../R/rewrite.R");
+# a = to_astq(x[i - 1]); astTraverse(a, makeIntegerLiterals)
+# a = to_astq(x[1:n]); astTraverse(a, makeIntegerLiterals)
+# a = to_astq(x[1:10]); astTraverse(a, makeIntegerLiterals)
+
+#
+# a = to_astq(runif(1, .1)); astTraverse(a, rewriteRUnif)
+# a = to_astq(runif(1, .1, .7)); astTraverse(a, rewriteRUnif)
+# a = to_astq(runif(1, max = .7)); astTraverse(a, rewriteRUnif)
+
 
 rewriteAST =
 function(ast, ..., functionRewrites = getFunctionRewrites())
@@ -8,7 +23,8 @@ function(ast, ..., functionRewrites = getFunctionRewrites())
   astTraverse(ast, rewriteProtect)
   ctr = rewriteCountProtects()
   astTraverse(ast, ctr)
-  # Too simple. Just temporary
+  # Too simple. Just temporary. Need to take account of conditional allocs.
+  # Or we just reset the stack at the end. Or use live analysis to identify when we can unprotect() an object.
   numProtects = environment(ctr)$count
   if(numProtects > 0) {
       e = ast$body$body
@@ -19,12 +35,67 @@ function(ast, ..., functionRewrites = getFunctionRewrites())
 }
 
 
+if(FALSE) 
+rewriteSubsetLiterals =
+function(node, ...)
+{
+   if(is(node, "Call") && node$fn$name %in% c("[", "[[")) {
+      sapply(node$args, makeIntegerLiterals)
+   } else if(is(node, "Replacement") && node$fn %in% c("[", "[[")) {
+       a = node$args[ - length(node$args)]
+   }
+}
+
+makeIntegerLiterals =
+    #
+    # Process elements in the AST and convert those with Numeric literals
+    # when we know they should be treated as integers
+    # e.g. x[1] and 1:n
+function(node)
+{
+    # Do we work recursively or do we look up at the parent.
+ if(is(node, "Numeric") && (isInSubsetCall(node) || isInColonCall(node))) {
+    replaceNode(node$parent, node, Integer$new(as.integer(node$value)), error = FALSE)
+ }
+    
+}
+
+isInColonCall =
+function(node)
+{
+  is(node$parent, "Call") && node$parent$fn$name == ":"
+}
+
+isInSubsetCall =
+function(x)
+{
+  p = x$parent
+  while(!is.null(p)) {
+     if(is(p, "Call") && p$fn$name %in% c("[", "[["))
+         return(TRUE)
+     p = p$parent
+  }
+  FALSE
+}
+
+
 rewriteRUnif =
 function(node, ...)
 {
   if(is(node, "Call") && node$fn$name == "runif") {
-      node$fn$name = "Rf_runif"
-      node$args = list(Numeric$new(0), Numeric$new(1))
+      node$fn$basename = "Rf_runif"
+      params = list(min = Numeric$new(0), max = Numeric$new(1))
+      a = node$args[-1]
+      if(length(a) > 0) {
+          if(length(names(a)) > 0) {
+             m = match.call(runif, to_r(node))
+             j = match(names(m), names(params))
+             params[j[!is.na(j)]] =  a
+          } else
+             params[seq(along = a)] = a
+        
+      }
+      node$args = unname(params)
   }
 }
 
