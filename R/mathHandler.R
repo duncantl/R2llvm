@@ -37,8 +37,11 @@ function(call, env, ir, ..., isSubsetIndex = FALSE, .targetType = NULL)
         args = as.list(call[-1])
     }
     
-   
+browser()
+
+    
   if(length(args) == 1) {  # So a unary operation
+
        #XXX temporary exploration
         # if this is +, e.g. +n, we should just compile call[[2]]
      if(op == "+")
@@ -46,13 +49,12 @@ function(call, env, ir, ..., isSubsetIndex = FALSE, .targetType = NULL)
 
       # XXX what about !
      k = quote(0 - 0)
-     k[[3]] = call[[2]]
-     k[[1]] = call[[1]]
+     k[[3]] = args[[1]]
+     k[[1]] = as.name(op)
      call = k
  }  # Finished with unary operation
 
 
-    
   args = lapply(args, rewriteExpressions, env, isSubsetIndex = isSubsetIndex)
 
   origCall = call
@@ -176,8 +178,13 @@ function(x, targetType, isIntType, toCast, env, ir, ...)
         x = as.name(x$name)
      else if(is(x, "Literal"))
         x = x$value
+     else if(is(x, "Call"))
+        return(compile(x, env, ir, ..., .targetType = targetType))
+     else if(is(x, "Brace") && x$is_paren)
+         #XXX What if more than on element in paren - possible?
+        return(compile(x$body[[1]], env, ir, ..., .targetType = targetType))     
      else if(is(x, "ASTNode"))
-         stop("need to deal with this type of ASTNode")
+        stop("need to deal with this type of ASTNode")
 
      if(is(x, "Value")) {
         if (!sameType(targetType, Rllvm::getType(x)))   # !is.null(toCast) && identical(x, toCast)
