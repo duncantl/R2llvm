@@ -214,9 +214,7 @@ function(node, error = TRUE, ...)
     whileLoop = rstatic::While$new(cond, b)
     init = rstatic::Assign$new(node$ivar$copy(), node$iter$args[[1]]$copy())
 
-#debug(replaceNode)
     replaceNode(node$parent, node, list(init, whileLoop), error = TRUE)
-#undebug(replaceNode)
    }
   
   TRUE
