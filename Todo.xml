@@ -13,7 +13,7 @@ Fix: In the original rw2d with xpos[i] = xpos[i-1L], we are ending up with a mat
 For now rw2d.R works around this by changing the code.
 </item>
 
-<item>
+<item status="extend">
 In rw2d.R, deal with x[i - 1].  Treat the 1 as an integer literal. We know this from the context.
 Perhaps do this in rewriteAST.
 </item>
@@ -60,7 +60,7 @@ tests/constString.R - lots of things to deal with: type inference, creating the 
 Does rewriteExpression know about the AST nodes.
 </item>
 
-<item>
+<item status="ongoing">
 Make math and [done] logic handler functions deal with both types of calls - AST and R's own language objects.
 </item>
 
@@ -104,8 +104,13 @@ Or add the Rf_unprotect_ptr() to the object when we know it is no longer used.
 Fix the constInputs() function.  See examples in tests2/ where we have to specify .readOnly = "x"
 </item>
 
-<item>
+<item status="done">
 Rewrite calls, e.g. runif(1) to Rf_runif(a, b) where a, b come from the defaults of the runif() function.
+<br/>
+Take the min and max values into account.
+</item>
+<item>
+Add handlers for other functions like runif().
 </item>
 
 <item>
@@ -130,8 +135,10 @@ And Rf_unprotect(1).  Basically, cast Literals appropriately.
 See tests2/integerLiterals.R
 </item>
 
-<item>
+<item status="check">
 Do general casting when we have non-literal values.
+<br/>
+This is already done in calls to createCast.
 </item>
 
 <item status="done">
