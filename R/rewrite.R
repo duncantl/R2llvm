@@ -181,20 +181,26 @@ function(..., .default = FunctionRewriteDefault)
 
 
 rewriteFor =
-function(node, ...)
+function(node, error = TRUE, ...)
 {
   if(is(node, "For"))   {
       # Process the body first for nested loops.
+#print(node)
+    # recursive processing for nested loops.
+#browser()    
+ astTraverse(node$body, rewriteFor, error = TRUE)
 
      # cond = substitute(i < n, list(i = as.name(i)
      #XXX cover more situations of course e.g. n:2 and i >= 2,  1:length(x)
     cond = Call$new("<=", list(node$ivar$copy(), node$iter$args[[2]]$copy()))
        # might want to write Call(++, i) or Call(intIncr, i) so the compiler could recognize this.
     inc = Assign$new(node$ivar$copy(), Call$new("+", list(node$ivar, Integer$new(1L))))
-    o = b = node$body$copy()
+    o = b = if(is.list(node$body))
+               node$body
+            else
+               node$body$copy()
 
-    astTraverse(node$body, rewriteFor)
-    
+   
     if(!is(b, "Brace"))
         b = rstatic::Brace$new(list(b))
 
@@ -202,9 +208,29 @@ function(node, ...)
     whileLoop = rstatic::While$new(cond, b)
     init = rstatic::Assign$new(node$ivar$copy(), node$iter$args[[1]]$copy())
 
-    replaceNode(node$parent, node, list(init, whileLoop))
+#debug(replaceNode)
+    replaceNode(node$parent, node, list(init, whileLoop), error = TRUE)
+#undebug(replaceNode)
    }
   
   TRUE
+}
+
+
+
+
+if(FALSE) {
+f =
+function(n)
+{
+  total = 0L
+  for(i in 2L:n) # with and without { around body.
+      total = total + i
+  return(total)
+}
+ast = rstatic::to_ast(f)
+z = astTraverse(ast, function(x) print(class(x)))
+z = astTraverse(ast, rewriteFor)
+ast
 }
 
