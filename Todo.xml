@@ -9,6 +9,22 @@
 <items>
 
 <item>
+Fix: In the original rw2d with xpos[i] = xpos[i-1L], we are ending up with a math operation with a phi node (i_2).
+For now rw2d.R works around this by changing the code.
+</item>
+
+<item>
+In rw2d.R, deal with x[i - 1].  Treat the 1 as an integer literal. We know this from the context.
+Perhaps do this in rewriteAST.
+</item>
+
+<item>
+Make tests2/assignSubset.R work with ssa = TRUE.
+We need to sort out when we are assigning to an element of a parameter.
+function(x) x[1L] = 0
+</item>
+
+<item>
 Get rid of construct_ir() and map these to compile().
 </item>
 
@@ -41,10 +57,6 @@ tests/constString.R - lots of things to deal with: type inference, creating the 
 
 
 <item>
-tests2/numeric.R and tests2/numeric1.R return odd numeric vectors.
-</item>
-
-<item>
 Does rewriteExpression know about the AST nodes.
 </item>
 
@@ -57,17 +69,35 @@ Put the .targetType into the calls to compile() now that we have the intended ty
 </item>
 
 <item>
-When returning an element from a  logical vector,  return an int32.
+When returning an element from a  logical vector,  make it a logical value not an integer.
 See subset.R
+<br/>
+[Originally we were returning an int1.]
+</item>
+
+<item>
+Handle assignments in expressions, e.g
+<![CDATA[
+ foo(x <- 1:10)
+]]>
+Rewrite the AST.  Note also that if that argument not evaluated in the call to foo due to lazy 
+evaluation, then we get a different semantic.
 </item>
 
 <item>
 The return value from tests2/numeric.R is corrupted.
-Issues with PROTECT() calls?  or Rffi?
+Could it be issues with PROTECT() calls?  or Rffi? int32 type(s) for arguments rather than int64. Tried this.
+tests2/numeric.R and tests2/numeric1.R return odd numeric vectors.
 </item>
 
 <item>
-Insert Rf_unprotect(num) into the return BasicBlock.
+When we have conditional R allocations within the routine
+add code to count how many are actually done and then 
+insert Rf_unprotect(num) into the return BasicBlock.
+<br/>
+Or simpler - reset the stack at the end of the routine.
+<br/>
+Or add the Rf_unprotect_ptr() to the object when we know it is no longer used.
 </item>
 
 <item>
@@ -93,9 +123,11 @@ Protect any allocation of an R vector.
 Then insert a call to unprotect(n) at the end.
 </item>
 
-<item>
+<item status="done">
 Make numeric(1) (rather than 1L) compile properly.
 And Rf_unprotect(1).  Basically, cast Literals appropriately.
+<br/>
+See tests2/integerLiterals.R
 </item>
 
 <item>
