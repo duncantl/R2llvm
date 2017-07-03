@@ -5,8 +5,49 @@
 
 
 <topic>
+<title>General</title>
+<items>
+<item>
+Example of compiled SQL command - compile a fitted tree model and do prediction
+on each row of a database.
+</item>
+
+</items>
+</topic>
+
+<topic>
+<title>R2llvm Reorganization</title>
+<items>
+
+<item>
+Get rid of construct_ir() and map these to compile().
+</item>
+<item>
+Unify the names for the compiler parameter (e.g., comp, env, nenv) in the different functions/methods.
+</item>
+
+</items>
+</topic>
+
+<topic>
 <title>R2llvm</title>
 <items>
+
+<item>
+In rw2d, identify local variable in the body of the loop and
+create an initializer outside of it.
+</item>
+
+<item>
+The return value from tests2/numeric.R is corrupted.
+Could it be issues with PROTECT() calls?  or Rffi? int32 type(s) for arguments rather than int64. Tried this.
+tests2/numeric.R and tests2/numeric1.R return odd numeric vectors.
+<br/>
+Are we protecting a SEXP type that is returned?
+<br/>
+See tests2/integerLiteral.R for the same effect with a simple integer call.
+</item>
+
 
 <item>
 Fix: In the original rw2d with xpos[i] = xpos[i-1L], we are ending up with a math operation with a phi node (i_2).
@@ -24,13 +65,6 @@ We need to sort out when we are assigning to an element of a parameter.
 function(x) x[1L] = 0
 </item>
 
-<item>
-Get rid of construct_ir() and map these to compile().
-</item>
-
-<item>
-Unify the names for the compiler parameter (e.g., comp, env, nenv) in the different functions/methods.
-</item>
 
 <item>
 2 dimensional subsetting.
@@ -50,15 +84,10 @@ Add more support in createCast (specifically the fromTypes, casters) to handle
 other types. See subset.R and subset2.R
 </item>
 
-<item>
-Example of compiled SQL command - compile a fitted tree model and do prediction
-on each row of a database.
-</item>
 
 <item>
 tests/constString.R - lots of things to deal with: type inference, creating the CHARSXP and STRSXP.
 </item>
-
 
 <item>
 Does rewriteExpression know about the AST nodes.
@@ -91,15 +120,6 @@ Rewrite the AST.  Note also that if that argument not evaluated in the call to f
 evaluation, then we get a different semantic.
 </item>
 
-<item>
-The return value from tests2/numeric.R is corrupted.
-Could it be issues with PROTECT() calls?  or Rffi? int32 type(s) for arguments rather than int64. Tried this.
-tests2/numeric.R and tests2/numeric1.R return odd numeric vectors.
-<br/>
-Are we protecting a SEXP type that is returned?
-<br/>
-See tests2/integerLiteral.R for the same effect with a simple integer call.
-</item>
 
 <item>
 When we have conditional R allocations within the routine
