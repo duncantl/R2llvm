@@ -83,11 +83,16 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
    if(is(args[[2]], "Symbol")) {
        # Experimenting with mapping an SSA name to its basename
        # when we have never allocated a variable for the ssa name.
+       # See tests2/  assignSubset.R and also list.R.
+       #
        v = args[[2]]
 
        var = getVariable(v$name, env, ir, TRUE, error = FALSE)
-       if(is.null(var))
-          var = getVariable(v$basename, env, ir, TRUE, error = FALSE)
+       if(is.null(var)) {
+          if(v$basename %in% names(env$.params))
+              var = env$.params[[v$basename]]
+          # var = getVariable(v$basename, env, ir, TRUE, error = FALSE)
+       }
        
        if(!is.null(var))
            args[[2]] = var
@@ -235,7 +240,10 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
 #XXX
 #cat("fix this cast\n")
 #         val = Rllvm::createCast(ir, "SIToFP", val, getElementType(getType(ref)))
-	  val = createCast(env, ir, getElementType(getType(ref)), getType(val), val)
+          to = getElementType(getType(ref))
+          from = getType(val)
+          
+	  val = createCast(env, ir, to, from, val)
       }
 
 
@@ -591,9 +599,8 @@ function(fun,
          .rewriteAST = missing(cfg)
          )  # .duplicateParams = TRUE
 {
-   if(missing(name)) {
+   if(missing(name)) 
       name = deparse(substitute(fun))
-   }
 
    if(is.logical(.assert))
       .assert = if(.assert) ".assert" else character()
@@ -613,6 +620,12 @@ function(fun,
    
   if (isClosure || is(fun, "Function")) {
 
+      # In the case tht rewriteAST changes the computational nature of the code,
+      # we compute the types from the original code. We can then augment the resulting
+      # types computed from the rewritten AST and CFG with any from the types computed here that are missing from the
+      # rewrites.
+   pre.types = infer_types(fun, error = FALSE)
+
    if(.rewriteAST && missing(cfg)) {
        # What if person specified the cfg?
        if(is(fun, "ASTNode"))
@@ -622,9 +635,8 @@ function(fun,
        rewriteAST(ast)
        cfg = to_cfg(ast)
    }
-   
-      
 
+       # Should this be before .rewriteAST?
      if(missing(cfg) && .insertReturn && isClosure)
        fun = insertReturn(fun) # do we need env??
                                #  Doing this here because we need to insert the returns before the CFG and types.
@@ -648,7 +660,16 @@ function(fun,
         types =  types[[2]]
     }
 
-    
+
+   # Merge pre.types with types
+     # We probably just want the parameters from pre.types.
+   ptypes = pre.types[names(args)]
+   a = intersect(names(pre.types), names(args))
+   m = !(a %in% names(types))
+   if(any(m))
+       types[ a[m] ] = pre.types[a[m]]
+
+   
     if(length(args)  > length(types)) 
        stop("need to specify the types for all of the arguments for the ", name, " function")
 
