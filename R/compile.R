@@ -38,6 +38,8 @@ setMethod("isSubsettingAssignment", "call", tmp)
 setMethod("isSubsettingAssignment", "=", tmp)
 setMethod("isSubsettingAssignment", "<-", tmp)
 
+setMethod("isSubsettingAssignment", "Assign", function(call) FALSE)
+
 
 tmp =
 function(call)          
@@ -63,12 +65,14 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
 
 #   if(.useHandler && !is.na(i <- match(as.character(call[[1]]), names(env$.compilerHandlers)))) 
 #       return(env$.compilerHandlers[[i]](call, env, ir, ...))
-    
+
    if(is(call, "Replacement"))
       call = asRCall(call)
 
    if(is(call, "Call"))
       args = call$args
+   else if(is(call, "Assign"))
+      args = list(call$write, call$read)
    else
       args = as.list(call[-1])  # drop the = or <-
    
@@ -76,6 +80,20 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
    type = NULL
 
 
+   if(is(args[[2]], "Symbol")) {
+       # Experimenting with mapping an SSA name to its basename
+       # when we have never allocated a variable for the ssa name.
+       v = args[[2]]
+
+       var = getVariable(v$name, env, ir, TRUE, error = FALSE)
+       if(is.null(var))
+          var = getVariable(v$basename, env, ir, TRUE, error = FALSE)
+       
+       if(!is.null(var))
+           args[[2]] = var
+   }
+
+   
 #XXX may not need to do this but maybe can compile the RHS as usual.
    if(isSubsettingAssignment(call) && is(ty <- getElementAssignmentContainerType(args[[1]], env), "STRSXPType")) 
       return(assignToSEXPElement(args[[1]], args[[2]], env, ir, type = ty))
@@ -128,7 +146,10 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
     } else
       val = compile(args[[2]], env, ir)
 
-
+browser()   
+   if(is(args[[1]], "Symbol"))
+       args[[1]] = as.name(args[[1]]$name)
+   
    if(is.name(args[[1]])) {
          var = as.character(args[[1]])
 
@@ -155,29 +176,30 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
              type = getDataType(val, env, args[[2]])
 
         
-        if (is.null(type)) {
+          if (is.null(type)) {
                    # Variable not found in env or global environments; get type via Rllvm
-          if (is(val, "StoreInst")) {
-            # This is from the val = compile(); probably from a
-            # statement like: y <- 4L; x <- y. When args[[2]] is
-            # compiled above, getVariable returns an object of class
-            # StoreInst. We ignore the current val, and instead query
-            # the type from the variable.
-            type = getDataType(args[[2]], env)
+              if (is(val, "StoreInst")) {
+                  # This is from the val = compile(); probably from a
+                  # statement like: y <- 4L; x <- y. When args[[2]] is
+                  # compiled above, getVariable returns an object of class
+                  # StoreInst. We ignore the current val, and instead query
+                  # the type from the variable.
+                  type = getDataType(args[[2]], env)
+              }
+
+              if(is(val, "Value"))
+                  type = getDataType(val, env)
+          }
+          
+          #XXXX Merge with compile.character
+          if(stringLiteral) {  # isStringType(type)) 
+              gvar = createGlobalVariable(sprintf(".%s", var), env$.module, type, val, TRUE, PrivateLinkage)
+              val = getGetElementPtr(gvar, ctx = ctx)
+              type = StringType
           }
 
-          if(is(val, "Value"))
-            type = getDataType(val, env)
-      }
-          #XXXX Merge with compile.character
-         if(stringLiteral) {  # isStringType(type)) 
-           gvar = createGlobalVariable(sprintf(".%s", var), env$.module, type, val, TRUE, PrivateLinkage)
-           val = getGetElementPtr(gvar, ctx = ctx)
-           type = StringType
-         }
-
-         ref <- createFunctionVariable(type, var, env, ir)
-         env$newAlloc(var, ref)
+          ref <- createFunctionVariable(type, var, env, ir)
+          env$newAlloc(var, ref)
    #XXX      assign(var, ref, envir = env)
           
            ## Todo fix type ???
@@ -200,10 +222,10 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
 
    if(!is.null(val)) {
 
-      if(all(sapply(call[-1], is.name))) {
+      if(all(sapply(args, is.name))) {
 
 # Temporary hack for dealing with ._return_1 = .return_1 in rw2d.R
-          tmp = env$.types[ as.character(call[-1]) ]
+          tmp = env$.types[ sapply(args, as.character) ]
           if(!sameType(tmp[[1]], tmp[[2]]))
              val = createCast(env, ir, getElementType(type[[1]]), tmp[[2]], val)
           else if(is(val, "AllocaInst"))

@@ -33,6 +33,7 @@ if(node$write$name %in% names(cmp$.phiVarInstructions)) {
 }
 
    call = asRCall(node)
+call=node
    return(`compile.=`(call, cmp, helper, .targetType = .targetType))
 
 
@@ -167,10 +168,10 @@ function(node, cmp, helper,  types, .targetType = NULL)
 construct_ir.Replacement =
 function(node, cmp, helper,  types, .targetType = NULL)
 {
-
+browser()
     e = to_r(node)
     var = node$write$basename
-    var = if(!( node$write$basename %in% names(cmp$.params)) )
+    if(!( var %in% names(cmp$.params)) )
               var = paste0(var, "_1")
     e[[2]][[2]] = as.name(var)
     
