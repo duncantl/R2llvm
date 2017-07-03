@@ -93,16 +93,24 @@ function(expr, env = NULL, ir = NULL)
 
 
 getVariable =
-function(sym, env, ir = NULL, load = TRUE, search.params=TRUE, searchR = FALSE, ...)
+function(sym, env, ir = NULL, load = TRUE, search.params = TRUE, searchR = FALSE, error = FALSE, ...)
 {
+browser()    
   if(is(sym, "Instruction"))
      return(sym)
-    
+
   sym = as.character(sym)
-  if(sym %in% names(env$.allocVars))
-      return(env$.allocVars[[sym]])
+
+if(sym == "prev_2") sym = "prev_1" #XXX!!!  
   
-  var = if(exists(sym, env)) {
+  if(sym %in% names(env$.allocVars)) {
+      v = env$.allocVars[[sym]]
+      return(v)
+ #     return(if(load) ir$createLoad(v) else v)
+  }
+  
+  var = if(FALSE && exists(sym, env)) { #XX Kill this off.
+      
                # The local variables we create in the function
                # are alloc'ed and so are pointers. They need to be
                # loaded to use their values.
@@ -113,13 +121,13 @@ function(sym, env, ir = NULL, load = TRUE, search.params=TRUE, searchR = FALSE, 
              tmp
         } else if(search.params && sym %in% names(env$.params)) {
           env$.params[[sym]]
-        } else if(!is.null(v <- getGlobalVariable(env$.module, sym)) || searchR == FALSE) {            # find in the module.
-#load = FALSE  # don't load a global, just access it. ??          
+        } else if(!is.null(v <- getGlobalVariable(env$.module, sym)) && searchR == FALSE) {            # find in the module.
+                               #load = FALSE  # don't load a global, just access it. ??          
           if(load && !is.null(ir) && ! (isPointerType(getType(v)) && isArrayType(getElementType(getType(v)))))
              ir$createLoad(v)
           else
              v
-        } else if(exists(sym)) {
+        } else if(searchR && exists(sym)) {
             # Look for a simple literal, constant value in R
            tmp = get(sym)
            
@@ -131,9 +139,9 @@ function(sym, env, ir = NULL, load = TRUE, search.params=TRUE, searchR = FALSE, 
 #               else
                    v
            } else
-               stop("found ", sym, " in R, but it is not an atomic value")
+               if(error) stop("found ", sym, " in R, but it is not an atomic value")
         } else
-             stop("cannot find variable named ", sym)
+             if(error) stop("cannot find variable named ", sym)
 }
 
 
