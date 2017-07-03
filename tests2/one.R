@@ -2,4 +2,6 @@ library(R2llvm)
 f = function() 2L
 
 #debug(compileFunction)
-f = compileFunction(f, optimize = FALSE)
+fc = compileFunction(f, optimize = FALSE)
+stopifnot(identical(.llvm(fc), 2L))
+
