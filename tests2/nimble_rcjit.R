@@ -17,7 +17,7 @@ b = .llvm(fc, 0.1, 3.6, 1e6L)
 stopifnot(identical(a,b))
 
 
-if(TRUE) {
+if(FALSE) {
 library(microbenchmark)
 N = 1e6
 mb = microbenchmark(.llvm(fc, 0.1, 3.6, N), logistic_map(0.1, 3.6, N), times = 20)

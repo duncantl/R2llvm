@@ -95,7 +95,6 @@ function(expr, env = NULL, ir = NULL)
 getVariable =
 function(sym, env, ir = NULL, load = TRUE, search.params = TRUE, searchR = FALSE, error = FALSE, ...)
 {
-browser()    
   if(is(sym, "Instruction"))
      return(sym)
 

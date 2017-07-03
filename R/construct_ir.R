@@ -1,10 +1,11 @@
 construct_ir =
 function(node, cmp, helper,  types, .targetType = NULL)
 {
+  cat("**CONSTRUCT_IR for", class(node)[1], "\n")
   UseMethod("construct_ir")
 }
 
-
+# These two don't look as if they have been changed to R2llvm so probably never invoked.
 construct_ir.BranchInst =
 function(node, cmp, helper,  types, .targetType = NULL) {
   # Connect block to its successors.
@@ -20,57 +21,12 @@ function(node, cmp, helper,  types, .targetType = NULL) {
   helper$create_ret(val)
 }
 
-construct_ir.Assign =
-function(node, cmp, helper,  types, .targetType = NULL)
-{
 
-    # For dealing with assignments that are actually for Phi nodes.
-if(node$write$name %in% names(cmp$.phiVarInstructions)) {
-    .targetType = cmp$.types[[node$write$name]]
-    i = compile(node$read, cmp, helper, .targetType = .targetType)
-    cmp$.phiVarInstructions[[node$write$name]] = i
-    return(i)
-}
+#########################################################################################################################
 
-   call = asRCall(node)
-call=node
-   return(`compile.=`(call, cmp, helper, .targetType = .targetType))
+# Disable these methods as we migrate them all to compile() methods
+if(FALSE) {
 
-
-######    
-  # Allocate memory for RHS.
-  type = types[[node$write$name]]
-
-  lhs = helper$createAlloc(type, id = node$write$name)
-  cmp$newAlloc(node$write$name, lhs)
-
-  # Store LHS into RHS.
-  rhs = construct_ir(node$read, cmp, helper,  types, .targetType = NULL)
-
-#Hack for now to avoid bad cast.  
-if(node$write$name != "._return_") {  
-  # Check the types match
-  rtype = Rllvm::getType(rhs)
-  if(!sameType(rtype, type)) 
-    rhs = createCast(cmp, helper, type, rtype, rhs)
-}
-
-  helper$createStore(rhs, lhs)
-
-  lhs
-#########
-}
-
-construct_ir.Call =
-function(node, cmp, helper,  types, .targetType = NULL)
-{
-  # FIXME: What if $fn is not a symbol?
-  idx = match(node$fn$name, names(cmp$.compilerHandlers))
-  if (is.na(idx)) 
-     compile.call(node, cmp, helper)
-  else 
-    cmp$.compilerHandlers[[idx]](node, cmp, helper)
-}
 
 construct_ir.Phi =
 function(node, cmp, helper,  types, .targetType = NULL)
@@ -124,45 +80,9 @@ function(node, cmp, helper,  types, .targetType = NULL)
   phi
 }
 
-construct_ir.Symbol =
-function(node, cmp, helper,  types, .targetType = NULL)
-{
-  v = cmp$getAlloc(node$name)
-  if(is.null(v)) {
-     v = cmp$.params[[ node$name ]]
-     return(v)
-  }
-
- #XXX Do we only load this if it is an AllocaInst?
- if(!is(v, "PHINode"))
-    helper$createLoad( v )
- else
-    v
-}
-
-construct_ir.Integer =
-function(node, cmp, helper,  types, .targetType = NULL)
-  createIntegerConstant(node$value)
-
-construct_ir.BrTerminator =
-function(node, cmp, helper,  types, .targetType = NULL) 
-   helper$createBr(node$dest)
 
 
-construct_ir.RetTerminator =
-function(node, cmp, helper,  types, .targetType = NULL) 
-   Rllvm::createReturn(helper$builder, Rllvm::createLoad(helper$builder, helper$alloc_table[["._return__1"]]))
 
-
-construct_ir.default =
-function(node, cmp, helper,  types, .targetType = NULL) 
-  browser()
-
-construct_ir.Numeric =
-function(node, cmp, helper,  types, .targetType = NULL)
-{
-   createConstant(helper, node$value)
-}
 
 
 construct_ir.Replacement =
@@ -184,5 +104,107 @@ browser()
 # else 
 #   cmp$.compilerHandlers[[idx]](node, cmp, helper)    
 }
+    
+
+construct_ir.Symbol =
+function(node, cmp, helper,  types, .targetType = NULL)
+{
+  v = cmp$getAlloc(node$name)
+  if(is.null(v)) {
+     v = cmp$.params[[ node$name ]]
+     return(v)
+  }
+
+ #XXX Do we only load this if it is an AllocaInst?
+ if(!is(v, "PHINode"))
+    helper$createLoad( v )
+ else
+    v
+}
+    
+
+construct_ir.Assign =
+function(node, cmp, helper,  types, .targetType = NULL)
+{
+    # For dealing with assignments that are actually for Phi nodes.
+if(node$write$name %in% names(cmp$.phiVarInstructions)) {
+    .targetType = cmp$.types[[node$write$name]]
+    i = compile(node$read, cmp, helper, .targetType = .targetType)
+    cmp$.phiVarInstructions[[node$write$name]] = i
+    return(i)
+}
+
+   call = asRCall(node)
+call=node
+   return(`compile.=`(call, cmp, helper, .targetType = .targetType))
+
+
+######    
+  # Allocate memory for RHS.
+  type = types[[node$write$name]]
+
+  lhs = helper$createAlloc(type, id = node$write$name)
+  cmp$newAlloc(node$write$name, lhs)
+
+  # Store LHS into RHS.
+  rhs = construct_ir(node$read, cmp, helper,  types, .targetType = NULL)
+
+#Hack for now to avoid bad cast.  
+if(node$write$name != "._return_") {  
+  # Check the types match
+  rtype = Rllvm::getType(rhs)
+  if(!sameType(rtype, type)) 
+    rhs = createCast(cmp, helper, type, rtype, rhs)
+}
+
+  helper$createStore(rhs, lhs)
+
+  lhs
+#########
+}    
+
+construct_ir.Call =
+function(node, cmp, helper,  types, .targetType = NULL)
+{
+  # FIXME: What if $fn is not a symbol?
+  idx = match(node$fn$name, names(cmp$.compilerHandlers))
+  if (is.na(idx)) 
+     compile.call(node, cmp, helper)
+  else 
+    cmp$.compilerHandlers[[idx]](node, cmp, helper)
+}
+
+    
+construct_ir.Integer =
+function(node, cmp, helper,  types, .targetType = NULL)
+  createIntegerConstant(node$value)
+
+construct_ir.BrTerminator =
+function(node, cmp, helper,  types, .targetType = NULL) 
+   helper$createBr(node$dest)
+
+
+
+#??? Is this ever called?
+construct_ir.RetTerminator =
+function(node, cmp, helper,  types, .targetType = NULL) 
+   Rllvm::createReturn(helper$builder, Rllvm::createLoad(helper$builder, helper$alloc_table[["._return__1"]]))
+
+
+
+construct_ir.Numeric =
+function(node, cmp, helper,  types, .targetType = NULL)
+{
+   createConstant(helper, node$value)
+}
+
+} # end of if() disabling these methods.
+
+
+construct_ir.default =
+function(node, cmp, helper,  types, .targetType = NULL) 
+  browser()
+
+
 
 

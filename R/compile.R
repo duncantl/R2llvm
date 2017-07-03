@@ -146,7 +146,7 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
     } else
       val = compile(args[[2]], env, ir)
 
-browser()   
+
    if(is(args[[1]], "Symbol"))
        args[[1]] = as.name(args[[1]]$name)
    
@@ -464,9 +464,9 @@ compile.Value <-
 function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL)  
   e
 
+if(FALSE) {
 compile.ASTNode =
 function(e, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL)
-{
     construct_ir(e, env, ir, env$.types)
 }
 
@@ -1264,7 +1264,7 @@ function(..., .types = list(...))
 compile.Integer =
 function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
 {
-  construct_ir(call, env, ir, env$.types)
+  createIntegerConstant(call$value, type = .targetType)
 }
 
 compile.Numeric =
@@ -1282,6 +1282,7 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
 compile.Call =
 function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
 {
+  # FIXME: What if $fn is not a symbol?    
   idx = match(call$fn$name, names(env$.compilerHandlers))
   if(is.na(idx)) 
      compile.call(call, env, ir, .targetType = .targetType)
@@ -1290,11 +1291,129 @@ function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = 
 }
 
 
+compile.BrTerminator =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)    
+   ir$createBr(call$dest)
 
 
+compile.RetTerminator =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
+{
+   stop("This needs to be fixed")
+   Rllvm::createReturn(ir, createLoad(ir, helper$alloc_table[["._return__1"]])) # helper$alloc_table from corsair. REPLACE.
+}
 
 
+compile.Assign =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
+{
+    # For dealing with assignments that are actually for Phi nodes.
+if(call$write$name %in% names(env$.phiVarInstructions)) {
+    .targetType = env$.types[[call$write$name]]
+    i = compile(call$read, env, ir, .targetType = .targetType)
+    env$.phiVarInstructions[[call$write$name]] = i
+    return(i)
+}
 
+#   call = asRCall(call)
+#call=node
+   return(`compile.=`(call, env, ir, .targetType = .targetType))
+}
+
+
+compile.Symbol =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
+{
+  v = env$getAlloc(call$name)
+  if(is.null(v)) {
+     v = env$.params[[ call$name ]]
+     return(v)
+  }
+
+ #XXX Do we only load this if it is an AllocaInst?
+ if(!is(v, "PHINode"))
+    ir$createLoad( v )
+ else
+    v
+}
+
+
+compile.Replacement =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
+{
+browser()
+    e = to_r(call)
+    var = call$write$basename
+    if(!( var %in% names(env$.params)) )
+              var = paste0(var, "_1")
+    e[[2]][[2]] = as.name(var)
+    
+    return(`compile.=`(e, env, ir))
+
+ 
+# idx = match(node$fn$name, names(cmp$.compilerHandlers))
+# if (is.na(idx)) 
+#    compile(node, cmp, helper)
+# else 
+#   cmp$.compilerHandlers[[idx]](node, cmp, helper)    
+}
+
+compile.Phi =
+function(call, env, ir, ..., fun = env$.fun, name = getName(fun), .targetType = NULL, .useHandlers = TRUE)
+{
+#XXX Fix    
+    node = call
+    cmp = env
+    helper = ir
+    types = env$.types
+    
+#XXXX
+# Don't insert phis for shadowed globals.
+#  if ( any(is_global(node$read)) )
+#    return (NULL)
+
+
+  phiName = node$write$name
+  
+  type = types[[node$write$name]]
+  numIncoming = length(node$blocks)
+  phi = Rllvm::createPhi(helper, type, numIncoming, id = node$write$name)
+# Add the incoming. We have them in the node$blocks and in node$read
+
+# We may not have created all of the incoming values for the phi nodes at this point
+# as the order of the CFG may put put creation of the incoming after the Phi node 
+# into which it comes.
+# So we have to make an incomplete Phi node and add its identity and what it is waiting
+# for (i.e. the variable in the Assignment) and when we process that we check to see if
+# we need to add it to any of the incomplete Phi nodes.
+
+  
+  mapply(function(var, block) {
+           val = cmp$.phiVarInstructions[[ var$name ]]
+
+           if(is.null(val)) {
+                # so the intruction has not been processed yet.
+                # We create a dummy Value and then arrange to replace
+                # it with the actual instruction at the end of the module/
+                # routine construction. This is the purpose of
+                # the llvm function replaceAllUsesWith()
+                # This approach is what llvm uses itself when we create
+                # the c++ API code from a .ll file. i.e., we are copying
+                # that directly.
+             val = .Call("R_createFwdRef_for_phi", type)
+             cmp$.phiForwardRefs[[ var$name ]] = val
+           }
+
+           addIncoming(phi, val, block)
+         }, node$read, cmp$blocks[node$blocks])
+
+  if(node$write$name %in% names(cmp$.phiVarInstructions)) 
+     cmp$.phiVarInstructions[[ phiName ]] <- phi
+  else
+     cmp$.allocVars[[ phiName ]] <- phi
+  
+  phi
+}
 
 
 
@@ -1333,3 +1452,4 @@ function(call, env, ir)
       # here?
    createStore(ir, val, ref)
  }
+

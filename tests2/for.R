@@ -13,7 +13,7 @@ cfg = rstatic::to_cfg(f)
 types = infer_types(cfg)
 
 ast = rstatic::to_ast(f)
-rstatic::astTraverse(ast, rstatic::rewriteFor)
+rstatic::astTraverse(ast, rewriteFor)
 cfg = rstatic::to_cfg(ast)
 
 # , init = list(n = typesys::IntegerType()))

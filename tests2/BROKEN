@@ -1,8 +1,8 @@
 # BROKEN
 
 # Recent work breaks this - Sat afternoon working on the rewrite and ..
-
-assignSubset.R - works with ssa = FALSE. But need to work with ssa = TRUE. Issue with connecting parameters to ssa.
+for2.R
+list.R - with the rewrite to mkList.
 
 rw2d.R
 runif.R
@@ -18,24 +18,28 @@ numeric1.R
 # NOT EXPECTED TO WORK
 
 # WORKING
-nimble_rcjit.R
-list.R - with the rewrite to mkList.
-subset.R 
-logicOps.R
-while.R
-while2.R
+
+
+      # The following have no control flow and so are the simplest.
 assign.R
-for.R
-for2.R
 const.R
 one.R
 onePlus.R
 cast.R
 xplus.R
 sexp.R
+oneAssign.R
+addI.R
+logicOps.R
+
+subset.R 
+assignSubset.R - 
+
 if2.R
 if3.R
 if4.R
 if5.R
-oneAssign.R
-addI.R
+while.R
+while2.R
+for.R
+nimble_rcjit.R

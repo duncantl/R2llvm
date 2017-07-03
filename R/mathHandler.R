@@ -37,7 +37,6 @@ function(call, env, ir, ..., isSubsetIndex = FALSE, .targetType = NULL)
         args = as.list(call[-1])
     }
     
-browser()
 
     
   if(length(args) == 1) {  # So a unary operation
@@ -45,7 +44,8 @@ browser()
        #XXX temporary exploration
         # if this is +, e.g. +n, we should just compile call[[2]]
      if(op == "+")
-        return(construct_ir(args[[1]], env, ir, env$.types)) # ..., isSubsetIndex = isSubsetIndex))
+        return(compile(args[[1]], env, ir, ..., isSubsetIndex = isSubsetIndex))
+#        return(construct_ir(args[[1]], env, ir, env$.types)) # ..., isSubsetIndex = isSubsetIndex))
 
       # XXX what about !
      k = quote(0 - 0)
