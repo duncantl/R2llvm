@@ -48,7 +48,6 @@ Are we protecting a SEXP type that is returned?
 See tests2/integerLiteral.R for the same effect with a simple integer call.
 </item>
 
-
 <item>
 Fix: In the original rw2d with xpos[i] = xpos[i-1L], we are ending up with a math operation with a phi node (i_2).
 For now rw2d.R works around this by changing the code.
@@ -59,10 +58,13 @@ In rw2d.R, deal with x[i - 1].  Treat the 1 as an integer literal. We know this 
 Perhaps do this in rewriteAST.
 </item>
 
-<item>
+<item status="done" commit="35020d6e8947b01bec7c1992e7ff7dcb683171af">
 Make tests2/assignSubset.R work with ssa = TRUE.
 We need to sort out when we are assigning to an element of a parameter.
 function(x) x[1L] = 0
+<br/>
+works with ssa = FALSE. But need to work with ssa = TRUE. Issue with connecting parameters to ssa.
+See the start of compile.= where we look for the variable on the RHS and if we can't find it, we look for its basename.
 </item>
 
 
@@ -135,13 +137,10 @@ Or add the Rf_unprotect_ptr() to the object when we know it is no longer used.
 Fix the constInputs() function.  See examples in tests2/ where we have to specify .readOnly = "x"
 </item>
 
-<item status="done">
-Rewrite calls, e.g. runif(1) to Rf_runif(a, b) where a, b come from the defaults of the runif() function.
-<br/>
-Take the min and max values into account.
-</item>
 <item>
 Add handlers for other functions like runif().
+This is referring to the rewriteAST() in rewrite.R.
+However, there are also handlers needed for adding constraints and solve handlers.
 </item>
 
 <item>
@@ -157,6 +156,12 @@ the terminator, and don't erase and reinsert the terminator.
 <item>
 Protect any allocation of an R vector.
 Then insert a call to unprotect(n) at the end.
+</item>
+
+<item status="done">
+Rewrite calls, e.g. runif(1) to Rf_runif(a, b) where a, b come from the defaults of the runif() function.
+<br/>
+Take the min and max values into account.
 </item>
 
 <item status="done">
