@@ -79,24 +79,14 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
    stringLiteral = FALSE
    type = NULL
 
-browser()
+
    if(is(args[[2]], "Symbol")) {
        # Experimenting with mapping an SSA name to its basename
        # when we have never allocated a variable for the ssa name.
        # See tests2/  assignSubset.R and also list.R.
        #
-       v = args[[2]]
-
-#       var = getVariable(v$name, env, ir, TRUE, error = FALSE)
-#       if(is.null(var)) {
-          if(v$basename %in% names(env$.params)) {
-              args[[2]] = var = env$.params[[v$basename]]
-          }
-          # var = getVariable(v$basename, env, ir, TRUE, error = FALSE)
-#       }
-       
-#       if(!is.null(var))
-#           args[[2]] = var
+       if(args[[2]]$basename %in% names(env$.params)) 
+           args[[2]] = env$.params[[v$basename]]
    }
 
    
