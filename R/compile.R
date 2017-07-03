@@ -79,7 +79,7 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
    stringLiteral = FALSE
    type = NULL
 
-
+browser()
    if(is(args[[2]], "Symbol")) {
        # Experimenting with mapping an SSA name to its basename
        # when we have never allocated a variable for the ssa name.
@@ -87,15 +87,16 @@ function(call, env, ir, ..., .targetType = NULL, .useHandler = TRUE)
        #
        v = args[[2]]
 
-       var = getVariable(v$name, env, ir, TRUE, error = FALSE)
-       if(is.null(var)) {
-          if(v$basename %in% names(env$.params))
-              var = env$.params[[v$basename]]
+#       var = getVariable(v$name, env, ir, TRUE, error = FALSE)
+#       if(is.null(var)) {
+          if(v$basename %in% names(env$.params)) {
+              args[[2]] = var = env$.params[[v$basename]]
+          }
           # var = getVariable(v$basename, env, ir, TRUE, error = FALSE)
-       }
+#       }
        
-       if(!is.null(var))
-           args[[2]] = var
+#       if(!is.null(var))
+#           args[[2]] = var
    }
 
    
